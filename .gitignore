@@ -1,0 +1,54 @@
+# === Dependências ===
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# === Next.js Build ===
+.next/
+out/
+build/
+dist/
+
+# === Variáveis de Ambiente e Segredos ===
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# === Bancos locais / Migrações locais temporárias ===
+prisma/*.db
+prisma/*.db-journal
+migrate.sql
+apply-migration.mjs
+
+# === Dados Sensíveis / Originais / Institucionais ===
+*.xlsx
+*.xls
+*.csv
+extracted_*.png
+/public/logos/instituicao-*.png
+/public/logos/instituicao-*.png
+
+# === TypeScript & Next Cache ===
+*.tsbuildinfo
+next-env.d.ts
+
+# === Logs & Debug ===
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# === SO & IDE ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === Deploy / Vercel ===
+.vercel
