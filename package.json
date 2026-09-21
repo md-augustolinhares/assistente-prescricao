@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@libsql/client": "^0.18.0",
+    "@libsql/client": "^0.8.1",
     "@prisma/adapter-libsql": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.1",
