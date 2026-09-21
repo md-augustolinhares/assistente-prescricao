@@ -31,7 +31,7 @@ export default async function PrintPrescriptionPage({
   }
 
   const institutionName =
-    process.env.INSTITUTION_NAME || 'PREFEITURA MUNICIPAL DE SANTA BÁRBARA D\'OESTE';
+    process.env.INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
   const institutionSubtitle =
     process.env.INSTITUTION_SUBTITLE || 'PRONTO ATENDIMENTO';
   const logoPath =

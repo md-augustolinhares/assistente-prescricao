@@ -1,7 +1,7 @@
 # Assistente de Prescrição - Log de Progresso e Roadmap (Uso Interno do Modelo)
 
 ## 🎯 Progresso Atual (Dia 1)
-O desenvolvimento inicial focou em construir a base do sistema de plantões e prescrições com alta fidelidade ao modelo físico (papel/excel) utilizado na Instituição.
+O desenvolvimento inicial focou em construir a base do sistema de plantões e prescrições com alta fidelidade ao modelo físico (papel/excel) utilizado na instituição.
 
 ### Entregas Concluídas:
 1. **Modelagem de Dados Inicial (Turso/Prisma):** Estrutura de plantões, prescrições, itens e catálogo base.

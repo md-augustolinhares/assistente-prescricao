@@ -34,7 +34,7 @@ export default async function PrintShiftPage({
   }
 
   const institutionName =
-    process.env.INSTITUTION_NAME || 'PREFEITURA MUNICIPAL DE SANTA BÁRBARA D\'OESTE';
+    process.env.INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
   const logoPath =
     process.env.INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
