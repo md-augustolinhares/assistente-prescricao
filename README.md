@@ -21,8 +21,9 @@ Em plantões de emergência e enfermarias, a transcrição e formatação da pre
 ## 🚀 Funcionalidades Principais (Highlights)
 
 - ⚡ **Velocidade e Ergonomia:** Interface focada em produtividade. Criação de prescrições estruturadas com o mínimo de cliques.
-- 📋 **Modelos Clínicos (Templates):**
-  - **Prescrição Geral:** Enfermaria clínica padrão.
+- 📋 **Modelos Clínicos Estruturados (Framework FAST-HUG):**
+  - Desenvolvidos com base na mnemônica FAST-HUG (adaptada para enfermarias clínicas), garantindo a checagem diária de analgesia, profilaxia de úlcera, profilaxia de TVP, controle glicêmico e dieta.
+  - **Prescrição Geral:** Enfermaria clínica padrão com todos os itens de suporte.
   - **Prescrição Psiquiátrica:** Foco em medicações VO/IM e manejo comportamental.
   - **Prescrição para Broncoespasmo:** Protocolos de broncodilatação e corticoterapia.
 - 🔄 **Modularidade e Variações Dinâmicas:**
