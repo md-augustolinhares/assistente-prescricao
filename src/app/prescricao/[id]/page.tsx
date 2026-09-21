@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header';
 import { AutoSaveStatus } from '@/components/prescription/auto-save-status';
 import { CatalogModal, CatalogItemData } from '@/components/prescription/catalog-modal';
 import { renderItemDescription } from '@/lib/prescription-utils';
+import { CopyButton } from '@/components/prescription/copy-button';
 
 interface TemplateItemInfo {
   id: string;
@@ -252,6 +253,7 @@ export default function PrescriptionEditorPage({
           </div>
 
           <div className="flex items-center gap-2">
+            <CopyButton items={items.filter(i => i.isEnabled)} />
             <Link
               href={`/prescricao/${prescription.id}/imprimir`}
               target="_blank"
@@ -404,8 +406,29 @@ export default function PrescriptionEditorPage({
                           </span>
                           <select
                             onChange={(e) => {
-                              if (e.target.value) {
-                                handleDescriptionChange(index, e.target.value);
+                              const newBaseText = e.target.value;
+                              if (newBaseText) {
+                                setItems((prev) =>
+                                  prev.map((item, i) => {
+                                    if (i === index) {
+                                      const route = item.route || '';
+                                      const frequency = item.frequency || '';
+                                      const conditionText = item.conditionText || '';
+                                      const scheduleType = item.scheduleType;
+
+                                      const newDesc = renderItemDescription({
+                                        baseText: newBaseText,
+                                        route,
+                                        frequency,
+                                        scheduleType,
+                                        conditionText,
+                                      });
+
+                                      return { ...item, baseText: newBaseText, description: newDesc };
+                                    }
+                                    return item;
+                                  })
+                                );
                               }
                             }}
                             className="bg-blue-50/50 border border-blue-200 text-blue-800 rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-1 focus:ring-blue-500 outline-none"

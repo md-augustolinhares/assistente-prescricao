@@ -145,7 +145,17 @@ export default function ShiftPage({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {shift.prescriptions.length > 0 && (
+              <Link
+                href={`/plantao/${shift.id}/imprimir`}
+                target="_blank"
+                className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
+              >
+                <span>🖨️</span>
+                <span>Imprimir Plantão</span>
+              </Link>
+            )}
             <button
               onClick={() => setIsModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2"

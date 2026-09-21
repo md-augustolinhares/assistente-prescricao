@@ -10,6 +10,7 @@ const updateTemplateItemSchema = z.object({
   conditionText: z.string().optional().default(''),
   defaultScheduleType: z.string().default('HORARIO'),
   category: z.string().default('MEDICAMENTO'),
+  variants: z.array(z.string()).optional(),
 });
 
 export async function PUT(
@@ -29,20 +30,26 @@ export async function PUT(
       conditionText: data.conditionText,
     });
 
+    const updateData: any = {
+      baseText: data.baseText.trim(),
+      route: data.route?.trim() || '',
+      frequency: data.frequency?.trim() || '',
+      conditionText: data.conditionText?.trim() || '',
+      defaultScheduleType: data.defaultScheduleType,
+      category: data.category,
+      description: fullDescription,
+    };
+
+    if (data.variants !== undefined) {
+      updateData.variants = JSON.stringify(data.variants.map(v => v.trim()).filter(Boolean));
+    }
+
     const updated = await prisma.templateItem.update({
       where: {
         id: itemId,
         templateId,
       },
-      data: {
-        baseText: data.baseText.trim(),
-        route: data.route?.trim() || '',
-        frequency: data.frequency?.trim() || '',
-        conditionText: data.conditionText?.trim() || '',
-        defaultScheduleType: data.defaultScheduleType,
-        category: data.category,
-        description: fullDescription,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updated);
