@@ -76,6 +76,26 @@ export default function ShiftPage({
     }
   }
 
+  async function handleDuplicatePrescription(prescriptionId: string, name: string) {
+    if (!confirm(`Deseja duplicar a prescrição de "${name}"?`)) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/prescriptions/${prescriptionId}/duplicate`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        await loadShift();
+      } else {
+        alert('Erro ao duplicar prescrição.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  }
+
   if (loading || !shift) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -195,6 +215,13 @@ export default function ShiftPage({
                       title="Excluir prescrição"
                     >
                       🗑️
+                    </button>
+                    <button
+                      onClick={() => handleDuplicatePrescription(p.id, p.patientName)}
+                      className="text-xs text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ml-2"
+                      title="Duplicar prescrição"
+                    >
+                      📋 Copiar
                     </button>
 
                     <div className="flex items-center gap-2">

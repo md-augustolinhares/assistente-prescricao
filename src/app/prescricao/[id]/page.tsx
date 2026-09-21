@@ -131,11 +131,37 @@ export default function PrescriptionEditorPage({
     );
   }
 
+  function cleanDescriptionSuffixes(desc: string) {
+    return desc
+      .replace(/\s*[-]*\s*ACM$/i, '')
+      .replace(/\s*[-]*\s*S[\.\s]*N\.?$/i, '')
+      .replace(/\s*[-]*\s*SE\s+DOR\s+OU\s+FEBRE$/i, '')
+      .replace(/\s*[-]*\s*SE\s+DOR[\/\s]*FEBRE$/i, '')
+      .replace(/\s*[-]*\s*SE\s+DOR$/i, '')
+      .replace(/\s*[-]*\s*SE\s+FEBRE$/i, '')
+      .replace(/\s*\(\s*ACM\s*\)$/i, '')
+      .replace(/\s*\(\s*S[\.\s]*N\.?\s*\)$/i, '')
+      .replace(/\s*A\s+CRIT[EÉ]RIO\s+M[EÉ]DICO$/i, '')
+      .trim();
+  }
+
+  function updateDescriptionBySchedule(desc: string, schedule: string) {
+    const cleaned = cleanDescriptionSuffixes(desc);
+    if (schedule === 'ACM') return `${cleaned} ACM`;
+    if (schedule === 'SN') return `${cleaned} SN`;
+    if (schedule === 'CONDICIONAL') return `${cleaned} SE DOR OU FEBRE`;
+    return cleaned;
+  }
+
   function handleScheduleChange(index: number, scheduleType: string) {
     setItems((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, scheduleType } : item
-      )
+      prev.map((item, i) => {
+        if (i === index) {
+          const newDesc = updateDescriptionBySchedule(item.description, scheduleType);
+          return { ...item, scheduleType, description: newDesc };
+        }
+        return item;
+      })
     );
   }
 
