@@ -20,13 +20,21 @@ export async function POST(
       return NextResponse.json({ error: 'Prescrição original não encontrada' }, { status: 404 });
     }
 
+    const lastPrescription = await prisma.prescription.findFirst({
+      where: { shiftId: original.shiftId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    const position = (lastPrescription?.position ?? 0) + 1;
+
     // Criar a nova prescrição (duplicada)
     const duplicated = await prisma.prescription.create({
       data: {
-        patientName: `${original.patientName} (Cópia)`,
+        patientName: `${original.patientName} (CÓPIA)`.substring(0, 100),
         prescriptionDate: new Date(),
         shiftId: original.shiftId,
         templateId: original.templateId,
+        position,
         items: {
           create: original.items.map((item) => ({
             position: item.position,
