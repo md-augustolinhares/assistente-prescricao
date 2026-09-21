@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { AutoSaveStatus } from '@/components/prescription/auto-save-status';
 import { CatalogModal, CatalogItemData } from '@/components/prescription/catalog-modal';
+import { renderItemDescription } from '@/lib/prescription-utils';
 
 interface TemplateItemInfo {
   id: string;
@@ -19,6 +20,10 @@ interface ItemRow {
   id?: string;
   position: number;
   description: string;
+  baseText?: string;
+  route?: string | null;
+  frequency?: string | null;
+  conditionText?: string | null;
   scheduleType: string;
   isEnabled: boolean;
   isManual: boolean;
@@ -131,33 +136,23 @@ export default function PrescriptionEditorPage({
     );
   }
 
-  function cleanDescriptionSuffixes(desc: string) {
-    return desc
-      .replace(/\s*[-]*\s*ACM$/i, '')
-      .replace(/\s*[-]*\s*S[\.\s]*N\.?$/i, '')
-      .replace(/\s*[-]*\s*SE\s+DOR\s+OU\s+FEBRE$/i, '')
-      .replace(/\s*[-]*\s*SE\s+DOR[\/\s]*FEBRE$/i, '')
-      .replace(/\s*[-]*\s*SE\s+DOR$/i, '')
-      .replace(/\s*[-]*\s*SE\s+FEBRE$/i, '')
-      .replace(/\s*\(\s*ACM\s*\)$/i, '')
-      .replace(/\s*\(\s*S[\.\s]*N\.?\s*\)$/i, '')
-      .replace(/\s*A\s+CRIT[EÉ]RIO\s+M[EÉ]DICO$/i, '')
-      .trim();
-  }
-
-  function updateDescriptionBySchedule(desc: string, schedule: string) {
-    const cleaned = cleanDescriptionSuffixes(desc);
-    if (schedule === 'ACM') return `${cleaned} ACM`;
-    if (schedule === 'SN') return `${cleaned} SN`;
-    if (schedule === 'CONDICIONAL') return `${cleaned} SE DOR OU FEBRE`;
-    return cleaned;
-  }
-
   function handleScheduleChange(index: number, scheduleType: string) {
     setItems((prev) =>
       prev.map((item, i) => {
         if (i === index) {
-          const newDesc = updateDescriptionBySchedule(item.description, scheduleType);
+          const baseText = item.baseText || item.description;
+          const route = item.route || '';
+          const frequency = item.frequency || '';
+          const conditionText = item.conditionText || '';
+
+          const newDesc = renderItemDescription({
+            baseText,
+            route,
+            frequency,
+            scheduleType,
+            conditionText,
+          });
+
           return { ...item, scheduleType, description: newDesc };
         }
         return item;
@@ -181,6 +176,7 @@ export default function PrescriptionEditorPage({
     const newItem: ItemRow = {
       position: items.length + 1,
       description: catalogItem.fullDescription,
+      baseText: catalogItem.fullDescription,
       scheduleType: 'HORARIO',
       isEnabled: true,
       isManual: false,
@@ -196,6 +192,7 @@ export default function PrescriptionEditorPage({
     const newItem: ItemRow = {
       position: items.length + 1,
       description: manualText.toUpperCase().trim(),
+      baseText: manualText.toUpperCase().trim(),
       scheduleType: manualSchedule,
       isEnabled: true,
       isManual: true,

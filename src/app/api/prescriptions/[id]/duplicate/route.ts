@@ -39,6 +39,10 @@ export async function POST(
           create: original.items.map((item) => ({
             position: item.position,
             description: item.description,
+            baseText: item.baseText || item.description,
+            route: item.route || '',
+            frequency: item.frequency || '',
+            conditionText: item.conditionText || '',
             scheduleType: item.scheduleType,
             isEnabled: item.isEnabled,
             isManual: item.isManual,
