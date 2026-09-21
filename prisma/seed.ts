@@ -293,7 +293,67 @@ async function main() {
     });
   }
 
-  console.log('Seed finalizado com sucesso! Templates criados.');
+  // 4. Catálogo de Itens Especiais (Antibióticos, Eletrólitos, Anticoagulantes, etc)
+  const itensCatalogo = [
+    {
+      name: 'Ceftriaxona 1g EV',
+      fullDescription: 'CEFTRIAXONA 1G + 100ML SF 0,9% EV 12/12H',
+      category: 'ANTIBIOTICO',
+    },
+    {
+      name: 'Amoxicilina + Clavulanato 1g EV',
+      fullDescription: 'AMOXICILINA + CLAVULANATO 1G + 100ML SF 0,9% EV 8/8H',
+      category: 'ANTIBIOTICO',
+    },
+    {
+      name: 'Ciprofloxacino 400mg EV',
+      fullDescription: 'CIPROFLOXACINO 400MG SOLUÇÃO EV 12/12H',
+      category: 'ANTIBIOTICO',
+    },
+    {
+      name: 'Metronidazol 500mg EV',
+      fullDescription: 'METRONIDAZOL 500MG BOLSA EV 8/8H',
+      category: 'ANTIBIOTICO',
+    },
+    {
+      name: 'Enoxaparina 40mg SC (Profilaxia TVP)',
+      fullDescription: 'ENOXAPARINA 40MG SC 1X AO DIA (PROFILAXIA TVP)',
+      category: 'ANTICOAGULANTE',
+    },
+    {
+      name: 'Enoxaparina 1mg/kg SC (Terapêutica)',
+      fullDescription: 'ENOXAPARINA 1MG/KG SC 12/12H (ANTICOAGULAÇÃO PLENA)',
+      category: 'ANTICOAGULANTE',
+    },
+    {
+      name: 'Correção de Potássio (KCl 19,1%)',
+      fullDescription: 'KCL 19,1% 10ML + SF 0,9% 500ML EV CORRER EM 4 HORAS',
+      category: 'ELETROLITO',
+    },
+    {
+      name: 'Correção de Sódio (NaCl 20%)',
+      fullDescription: 'NACL 20% 20ML + SF 0,9% 500ML EV CORRER EM 4 HORAS',
+      category: 'ELETROLITO',
+    },
+    {
+      name: 'Passagem de SVD + Diurese',
+      fullDescription: 'PASSAGEM DE SONDA VESICAL DE DEMORA COM QUANTIFICAÇÃO DE DIURESE',
+      category: 'SONDA',
+    },
+    {
+      name: 'Clister Glicerinado 500ml',
+      fullDescription: 'CLISTER GLICERINADO 500ML VIA RETAL SE NECESSÁRIO',
+      category: 'OUTRO',
+    },
+  ];
+
+  for (const catItem of itensCatalogo) {
+    await prisma.catalogItem.create({
+      data: catItem,
+    });
+  }
+
+  console.log('Seed finalizado com sucesso! Templates e Catálogo criados.');
 }
 
 main()
