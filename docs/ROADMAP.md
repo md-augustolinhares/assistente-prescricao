@@ -21,6 +21,7 @@ O desenvolvimento inicial focou em construir a base do sistema de plantões e pr
 - **Implementação:** Alimentar o agente (RAG ou Contexto) com guias práticos e manuais de prescrição (ex: *Yellowbook*, protocolos do hospital) para ajudar na curadoria clínica desses modelos.
 
 ### 2. Sugestões Adicionais de Evolução do Sistema (Ideias do Agente)
+- **Reordenação Visual de Modelos (Drag-and-drop / Setas):** Adicionar botões de subir e descer na tela de Edição de Modelos para dar 100% de autonomia na reordenação da lista sem necessidade de mexer no banco de dados.
 - **Autenticação e Multi-usuário:** Se outros médicos forem utilizar a ferramenta, criar sistema de login onde cada profissional possa ter seu próprio repositório de "Prescrições Favoritas" e seus plantões isolados.
 - **Suporte Offline (PWA):** Hospitais frequentemente sofrem com queda de Wi-Fi. Transformar o site num *Progressive Web App* para permitir prescrição e cache de tela offline.
 - **Calculadora Pediátrica Integrada:** Um módulo opcional para pacientes pediátricos onde, ao inserir o peso da criança, o sistema sugira automaticamente a conversão de *mg/kg* para *ml* na descrição do item.
