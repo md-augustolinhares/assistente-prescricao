@@ -1,48 +1,62 @@
 # 🏥 Assistente de Prescrição Médica
 
-Aplicação web moderna, responsiva e de alta performance desenvolvida para agilizar a elaboração de prescrições hospitalares em enfermarias clínicas durante plantões médicos.
+> **Status:** MVP Funcional | **Tipo:** Ferramenta Clínica (HealthTech) / Case de Portfólio
 
-Substitui fluxos manuais e lentos baseados em planilhas por uma interface intuitiva, com modelos clínicos pré-configurados (Geral, Psiquiatria, Broncodilatação), opções dinâmicas de aprazamento, catálogo de medicamentos especiais e impressão padronizada em folha A4 paisagem.
+Uma aplicação web responsiva desenvolvida para agilizar a elaboração de prescrições hospitalares em enfermarias clínicas e prontos-socorros.
 
----
-
-## ✨ Funcionalidades Principais
-
-- **⚡ Alta Agilidade em Plantão:** Interface focada em produtividade com o mínimo de cliques necessário.
-- **📑 Modelos Clínicos Pré-configurados:**
-  - Prescrição Geral (enfermaria clínica padrão)
-  - Prescrição Psiquiátrica (foco em medicações VO/IM e manejo comportamental)
-  - Prescrição para Broncoespasmo (protocolos de broncodilatação e corticoterapia)
-- **🎛️ Variantes Dinâmicas e Customização:**
-  - Ajuste rápido de apresentação de hidratações (ex: SF 0,9% 500ml 12/12h vs 8/8h vs manutenção)
-  - Variantes de dietas hospitalares (Geral, Branda, Pastosa, Zero, Hipossódica, etc.)
-  - Seleção de aprazamento clínico por item: `ACM` (A critério médico), `Horário Fixo`, `SN` (Se necessário) ou `Condicional`
-  - Protocolos clínicos integrados (insulinização conforme dextro, hipoglicemia e emergência hipertensiva)
-- **📦 Catálogo de Medicamentos Especiais:** Cadastro e reutilização ágil de antibióticos, anticoagulantes e eletrólitos.
-- **🖨️ Impressão Fiel A4 (Landscape):** Layout milimétrico pronto para assinatura e carimbo, com coluna de horários em branco para checagem da equipe de enfermagem.
-- **🔒 Sessão Segura e Descentralizada:** Autenticação customizada via JWT com expiração de 36 horas, compatível com navegação em modo anônimo e computadores compartilhados de pronto-atendimento.
-- **💾 Auto-Save:** Persistência automática em tempo real para proteção contra quedas de energia ou fechamentos acidentais de aba.
+Este projeto nasce de uma **dor clínica real**: substituir fluxos manuais baseados em copiar e colar células no Excel ou editores de texto genéricos por um sistema estruturado, desenhado para a ergonomia do médico plantonista. 
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 🎯 O Problema & A Solução de Produto
 
-- **Framework:** [Next.js](https://nextjs.org/) (App Router, React Server Components & API Routes)
+Em plantões de emergência e enfermarias, a transcrição e formatação da prescrição médica diária consome tempo significativo. O uso de planilhas gera atrito mecânico e formatações inconsistentes na impressão.
+
+**A Solução:** Um sistema focado na **redução de carga cognitiva e clique-mínimo**. O aplicativo traz modelos clínicos pré-configurados, gestão de variações (ex: alternar rapidamente a dosagem de uma hidratação sem reescrever a via e frequência) e uma arquitetura *White-Label*, permitindo ser implantado em qualquer instituição.
+
+> **Autonomia Clínica Preservada:** O sistema atua exclusivamente na formatação e estruturação ágil do documento. **Nenhum modelo de IA sugere doses, diagnósticos ou condutas.** Toda a decisão clínica parte do médico, que assina e carimba o documento final.
+
+---
+
+## 🚀 Funcionalidades Principais (Highlights)
+
+- ⚡ **Velocidade e Ergonomia:** Interface focada em produtividade. Criação de prescrições estruturadas com o mínimo de cliques.
+- 📋 **Modelos Clínicos (Templates):**
+  - **Prescrição Geral:** Enfermaria clínica padrão.
+  - **Prescrição Psiquiátrica:** Foco em medicações VO/IM e manejo comportamental.
+  - **Prescrição para Broncoespasmo:** Protocolos de broncodilatação e corticoterapia.
+- 🔄 **Modularidade e Variações Dinâmicas:**
+  - Ajuste rápido de apresentação (ex: `SF 0,9% 500ml` vs `100ml`) mantendo o aprazamento intacto.
+  - Seleção de aprazamento clínico nativo: `ACM` (A critério médico), `Horário Fixo`, `SN` (Se necessário) ou `Condicional`.
+- 🖨️ **Motor de Impressão Pixel-Perfect (HTML/CSS):** 
+  - Layout nativo para papel **A4 Paisagem**, seguindo os padrões oficias de prontuários em papel.
+  - **Impressão em Lote (Batch Print):** Imprima as folhas de todos os pacientes do plantão ativo com um único clique.
+- 🔒 **Segurança, Privacidade & White-Label:**
+  - **Zero dados sensíveis:** Nenhum dado institucional ou de paciente real transita pelos repositórios de código. O projeto é 100% genérico. Logomarcas e nomes de hospitais são injetados exclusivamente via **Variáveis de Ambiente** no deploy em produção.
+  - **Ausência de dados reais de pacientes:** O sistema é uma ferramenta de rascunho de plantão. Não há integração de dados reais do paciente ou prontuário eletrônico. Nomes digitados não persistem em logs ou histórico do repositório.
+  - Autenticação própria via JWT (Expiração de 36h) ideal para computadores compartilhados.
+
+---
+
+## 🛠️ Stack Tecnológica & Arquitetura
+
+O projeto foi construído seguindo princípios de *Clean Code* e separação de responsabilidades (Front-end vs API vs Banco de Dados):
+
+- **Core:** [Next.js](https://nextjs.org/) (App Router, React Server Components & API Routes)
 - **Linguagem:** [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
-- **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
-- **ORM:** [Prisma ORM](https://www.prisma.io/)
-- **Banco de Dados:** [Turso](https://turso.tech/) (libSQL / SQLite Serverless na Nuvem)
-- **Autenticação:** [jose](https://github.com/panva/jose) (JWT seguro) & [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
-- **Deploy:** Vercel (Edge & Serverless Functions)
+- **Design & UI:** [Tailwind CSS](https://tailwindcss.com/)
+- **ORM & Banco de Dados:** [Prisma ORM](https://www.prisma.io/) + [Turso](https://turso.tech/) (libSQL / SQLite Serverless na Edge)
+- **Segurança:** [jose](https://github.com/panva/jose) (JWT seguro) & [bcryptjs](https://github.com/dcodeIO/bcrypt.js) para hash de senhas
+- **Engenharia com IA:** O desenvolvimento desta base arquitetural utilizou *Agentic Workflows* avançados, coordenando IAs especialistas (Frontend, Backend, Database e Code Reviewer) para escalar a produtividade do código.
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## 💻 Como Executar o Projeto Localmente
 
 ### Pré-requisitos
 - Node.js (versão 20 ou superior)
 - NPM ou Yarn
-- Conta no [Turso](https://turso.tech) para banco de dados SQLite serverless
+- Conta no [Turso](https://turso.tech) (Plano Gratuito) para o banco de dados serverless.
 
 ### 1. Clonar o repositório
 ```bash
@@ -61,41 +75,32 @@ Copie o arquivo de exemplo e preencha com as suas configurações:
 cp .env.example .env.local
 ```
 
-Campos necessários:
-- `TURSO_DATABASE_URL`: URL do seu banco Turso (`libsql://...`)
-- `TURSO_AUTH_TOKEN`: Token de autenticação do Turso
-- `AUTH_PASSWORD_HASH`: Hash bcrypt da senha de acesso ao plantão
-- `AUTH_SECRET`: Chave secreta de pelo menos 32 caracteres para assinatura dos JWTs
-- `INSTITUTION_NAME`: Nome da instituição de saúde para o cabeçalho impresso
+Abra o arquivo `.env.local` e preencha os campos obrigatórios:
+- `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN`: Suas credenciais do Turso.
+- `AUTH_PASSWORD_HASH`: Hash bcrypt da sua senha de acesso. *(Dica de geração: `node -e "console.log(require('bcryptjs').hashSync('SuaSenha', 10))"`)*
+- `AUTH_SECRET`: Chave secreta longa e aleatória para assinar os tokens JWT.
+- **Variáveis White-Label:** `INSTITUTION_NAME`, `INSTITUTION_SUBTITLE`, `INSTITUTION_LOGO_PATH` (Pode apontar para uma URL pública da sua logo).
 
-> **Dica para gerar o hash da senha:**
-> ```bash
-> node -e "console.log(require('bcryptjs').hashSync('SUA_SENHA_AQUI', 10))"
-> ```
-
-### 4. Sincronizar o Banco e Rodar Seeds
+### 4. Inicializar o Banco e Executar Seeds (Modelos Base)
+Execute os scripts para popular o banco de dados com os templates clínicos iniciais:
 ```bash
 npx prisma generate
 npx tsx prisma/seed.ts
 ```
 
-### 5. Iniciar em desenvolvimento
+### 5. Iniciar o servidor de desenvolvimento
 ```bash
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) no seu navegador. A senha padrão configurada para ambiente local de testes é `plantao123`.
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador. 
 
 ---
 
-## 🏛️ Arquitetura e Portfólio
-
-Este projeto foi desenhado sob princípios de isolamento de responsabilidades e código limpo (*Clean Architecture / Clean Code*):
-- **Camada de Apresentação:** Componentes desacoplados com validações em tempo real.
-- **Camada de Dados:** Schema normalizado cobrindo modelos (`Template`), itens (`TemplateItem`), plantões (`Shift`) e prescrições do paciente (`Prescription`).
-- **Segurança & Conformidade:** Zero dados institucionais ou de pacientes versionados no código-fonte. Todo o cabeçalho e identidade visual são injetados dinamicamente via variáveis de ambiente.
+## 📸 Screenshots (Demonstração)
+*(Sugestão: Adicione aqui capturas de tela mostrando a interface de plantão, o painel de edição de prescrição e um PDF/Print do modelo final gerado)*
 
 ---
 
 ## 📄 Licença
-Este projeto é de uso pessoal e educacional sob licença MIT.
+Este projeto é de código aberto para fins de portfólio e educacionais sob a licença [MIT](LICENSE).
