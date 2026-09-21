@@ -4,7 +4,7 @@ import { createSessionToken, verifyPassword, SESSION_COOKIE_NAME, SESSION_MAX_AG
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { password } = body;
+    const password = body?.password?.trim();
 
     if (!password) {
       return NextResponse.json({ error: 'Senha não informada' }, { status: 400 });

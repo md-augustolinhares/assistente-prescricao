@@ -28,9 +28,10 @@ export async function middleware(request: NextRequest) {
   try {
     const secretKey = process.env.AUTH_SECRET || 'secret-key-fallback-min-32-chars-length!!';
     const key = new TextEncoder().encode(secretKey);
-    await jwtVerify(token, key, { algorithms: ['HS256'] });
+    await jwtVerify(token, key, { algorithms: ['HS256'], clockTolerance: 120 });
     return NextResponse.next();
-  } catch {
+  } catch (err) {
+    console.error('Middleware JWT Verify Error:', err);
     const loginUrl = new URL('/login', request.url);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(SESSION_COOKIE_NAME);

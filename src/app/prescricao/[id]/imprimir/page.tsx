@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PrintButton } from '@/components/prescription/print-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,13 +63,7 @@ export default async function PrintPrescriptionPage({
           </span>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2"
-        >
-          <span>🖨️</span>
-          <span>Imprimir Agora (Ctrl + P)</span>
-        </button>
+        <PrintButton />
       </div>
 
       {/* Folha de Prescrição A4 Landscape */}

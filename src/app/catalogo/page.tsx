@@ -25,8 +25,9 @@ export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [loading, setLoading] = useState(true);
 
-  // Form state para novo item
+  // Form state para novo/editar item
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [fullDescription, setFullDescription] = useState('');
   const [category, setCategory] = useState('ANTIBIOTICO');
@@ -50,7 +51,25 @@ export default function CatalogPage() {
     loadItems();
   }, []);
 
-  async function handleCreateItem(e: React.FormEvent) {
+  function openNewModal() {
+    setEditingId(null);
+    setName('');
+    setFullDescription('');
+    setCategory('ANTIBIOTICO');
+    setError('');
+    setIsModalOpen(true);
+  }
+
+  function openEditModal(item: CatalogItem) {
+    setEditingId(item.id);
+    setName(item.name);
+    setFullDescription(item.fullDescription);
+    setCategory(item.category);
+    setError('');
+    setIsModalOpen(true);
+  }
+
+  async function handleSaveItem(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !fullDescription.trim()) return;
 
@@ -58,8 +77,11 @@ export default function CatalogPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/catalog', {
-        method: 'POST',
+      const url = editingId ? `/api/catalog/${editingId}` : '/api/catalog';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
@@ -70,13 +92,11 @@ export default function CatalogPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || 'Erro ao cadastrar item');
+        setError(data.error || 'Erro ao salvar item');
         setSubmitting(false);
         return;
       }
 
-      setName('');
-      setFullDescription('');
       setIsModalOpen(false);
       await loadItems();
     } catch {
@@ -123,7 +143,7 @@ export default function CatalogPage() {
           </div>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openNewModal}
             className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2 self-start sm:self-auto"
           >
             <span>+</span>
@@ -191,10 +211,17 @@ export default function CatalogPage() {
                   </p>
                 </div>
 
-                <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-end">
+                <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => openEditModal(item)}
+                    className="text-xs text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"
+                    title="Editar item"
+                  >
+                    ✏️ Editar
+                  </button>
                   <button
                     onClick={() => handleDelete(item.id, item.name)}
-                    className="text-xs text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition"
+                    className="text-xs text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"
                     title="Excluir item"
                   >
                     🗑️ Remover
@@ -212,7 +239,7 @@ export default function CatalogPage() {
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-800">
-                Novo Medicamento Especial
+                {editingId ? 'Editar Medicamento Especial' : 'Novo Medicamento Especial'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -222,7 +249,7 @@ export default function CatalogPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateItem} className="space-y-4">
+            <form onSubmit={handleSaveItem} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Nome Curto de Identificação
@@ -288,7 +315,7 @@ export default function CatalogPage() {
                   disabled={submitting || !name.trim() || !fullDescription.trim()}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-blue-600/20 disabled:opacity-50 transition"
                 >
-                  {submitting ? 'Salvando...' : 'Cadastrar no Catálogo'}
+                  {submitting ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar no Catálogo'}
                 </button>
               </div>
             </form>
