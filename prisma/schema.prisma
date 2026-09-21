@@ -24,6 +24,10 @@ model TemplateItem {
   template            Template            @relation(fields: [templateId], references: [id], onDelete: Cascade)
   position            Int
   description         String
+  baseText            String              @default("")
+  route               String?             @default("")
+  frequency           String?             @default("")
+  conditionText       String?             @default("")
   category            String              // DIETA, HIDRATACAO, MEDICAMENTO, PROTOCOLO, CUIDADO
   isProtocol          Boolean             @default(false)
   protocolDetail      String?
@@ -77,6 +81,10 @@ model PrescriptionItem {
   catalogItem     CatalogItem?  @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
   position        Int
   description     String
+  baseText        String        @default("")
+  route           String?       @default("")
+  frequency       String?       @default("")
+  conditionText   String?       @default("")
   scheduleType    String
   isEnabled       Boolean       @default(true)
   isManual        Boolean       @default(false)

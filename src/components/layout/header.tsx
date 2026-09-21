@@ -51,6 +51,16 @@ export function Header() {
           >
             Catálogo de Especiais
           </Link>
+          <Link
+            href="/modelos"
+            className={`px-3 py-1.5 rounded-lg transition ${
+              pathname.startsWith('/modelos')
+                ? 'bg-blue-50 text-blue-700 font-semibold'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            Modelos de Prescrição
+          </Link>
         </nav>
       </div>
 
