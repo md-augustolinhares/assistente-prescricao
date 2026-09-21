@@ -70,107 +70,111 @@ export default async function PrintPrescriptionPage({
       </div>
 
       {/* Folha de Prescrição A4 Landscape */}
-      <div className="max-w-[280mm] mx-auto bg-white border border-slate-300 print:border-none p-4 print:p-0 shadow-sm print:shadow-none min-h-[190mm]">
-        {/* Cabeçalho Oficial com Brasão e Nome da Prefeitura */}
-        <div className="border border-black flex items-center p-2">
-          <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center ml-1 mr-3">
-            {/* Tag img nativa para garantir carregamento e renderização na impressora */}
-            <img
-              src={logoPath}
-              alt="Brasão Municipal"
-              className="w-14 h-14 object-contain"
-            />
-          </div>
-          <div className="flex-1 text-center pr-16">
-            <h1 className="text-base font-black uppercase tracking-wider text-black leading-tight">
-              {institutionName}
-            </h1>
-            {institutionSubtitle && (
-              <h2 className="text-[11px] font-bold uppercase text-neutral-800 tracking-wider mt-0.5">
-                {institutionSubtitle}
-              </h2>
-            )}
-          </div>
-        </div>
+      <div className="max-w-[297mm] mx-auto bg-white p-4 print:p-0 shadow-sm print:shadow-none min-h-[210mm] text-black">
+        <table className="w-full border-collapse border-2 border-black text-[10pt]">
+          <thead>
+            {/* Linha do Logo e Título */}
+            <tr>
+              <th colSpan={2} className="relative text-center h-24 border-b-2 border-black">
+                <img
+                  src={logoPath}
+                  alt="Brasão Municipal"
+                  className="absolute left-4 top-2 h-20 w-auto object-contain"
+                />
+                <h1 className="text-[20pt] font-bold">{institutionName}</h1>
+              </th>
+            </tr>
+            
+            {/* Linha: Prescrição e Data */}
+            <tr className="h-8">
+              <th className="w-[65%] text-center font-bold text-[12pt] border-r-2 border-b border-black">
+                PRESCRIÇÃO MÉDICA
+              </th>
+              <th className="w-[35%] text-center font-bold text-[12pt] border-b border-black">
+                DATA: {formattedDate}
+              </th>
+            </tr>
+            
+            {/* Linha: Nome e Horário da Medicação */}
+            <tr className="h-8">
+              <th className="w-[65%] text-left font-bold text-[11pt] border-r-2 border-b-2 border-black pl-1">
+                NOME: <span className="uppercase">{prescription.patientName}</span>
+              </th>
+              <th className="w-[35%] text-center font-bold text-[11pt] border-b-2 border-black">
+                HORÁRIO DA MEDICAÇÃO
+              </th>
+            </tr>
+          </thead>
+          
+          <tbody>
+            {/* Itens da Prescrição */}
+            {prescription.items.map((item, index) => {
+              const isProtocol = item.templateItem?.isProtocol;
+              const hasCondition = !!item.conditionText || item.scheduleType === 'ACM' || item.scheduleType === 'SN';
+              
+              // We need to bold the condition part if possible.
+              // item.description already contains the full text. We can bold the condition/schedule type part if we do some splitting or just use the modular fields!
+              // Since we have modular fields: baseText, route, frequency, conditionText, scheduleType
+              
+              let boldPart = '';
+              let normalPart = '';
 
-        {/* Faixa: Prescrição Médica e Data */}
-        <div className="border-x border-b border-black grid grid-cols-12 text-xs font-bold">
-          <div className="col-span-8 p-1.5 text-center uppercase tracking-wider">
-            PRESCRIÇÃO MÉDICA
-          </div>
-          <div className="col-span-4 p-1.5 border-l border-black flex items-center justify-between px-4">
-            <span>DATA:</span>
-            <span className="font-mono text-xs">{formattedDate}</span>
-          </div>
-        </div>
+              if (item.scheduleType === 'ACM') {
+                boldPart = 'ACM';
+              } else if (item.scheduleType === 'SN') {
+                boldPart = 'SN';
+              } else if (item.scheduleType === 'CONDICIONAL' && item.conditionText) {
+                boldPart = item.conditionText;
+              }
 
-        {/* Faixa: Nome do Paciente e Horário da Medicação */}
-        <div className="border-x border-b border-black grid grid-cols-12 text-xs font-bold">
-          <div className="col-span-8 p-1.5 flex items-center gap-2 px-2.5">
-            <span className="text-neutral-700">NOME:</span>
-            <span className="text-sm font-black tracking-wide uppercase">
-              {prescription.patientName}
-            </span>
-          </div>
-          <div className="col-span-4 p-1.5 border-l border-black text-center uppercase tracking-wider text-[11px]">
-            HORÁRIO DA MEDICAÇÃO
-          </div>
-        </div>
+              // Since the description is already assembled, we can just split it if it ends with the boldPart
+              let finalDesc = item.description;
+              let renderedBold = '';
+              
+              if (boldPart && finalDesc.endsWith(boldPart)) {
+                normalPart = finalDesc.slice(0, -boldPart.length);
+                renderedBold = boldPart;
+              } else {
+                normalPart = finalDesc;
+              }
 
-        {/* Tabela de Itens e Horários */}
-        <div className="border-x border-black divide-y divide-black text-[11px]">
-          {prescription.items.map((item, index) => {
-            const isProtocol = item.templateItem?.isProtocol;
-
-            return (
-              <div
-                key={item.id}
-                className="grid grid-cols-12 min-h-[25px] items-stretch leading-tight"
-              >
-                {/* Coluna da Prescrição Médica */}
-                <div className="col-span-8 p-1.5 border-r border-black font-bold uppercase flex flex-col justify-center">
-                  <div>
-                    <span className="inline-block w-6 font-mono text-xs font-black">
-                      {index + 1}-
-                    </span>
-                    <span>{item.description}</span>
-                  </div>
-
-                  {/* Protocolo Escalonado (Ex: Insulina) */}
+              return (
+                <>
+                  <tr key={item.id} className="h-[22px]">
+                    <td className="w-[65%] border-r-2 border-b border-black pl-1 font-semibold uppercase">
+                      {index + 1}- {normalPart} <span className="font-bold">{renderedBold}</span>
+                    </td>
+                    <td className="w-[35%] border-b border-black"></td>
+                  </tr>
+                  {/* Protocolo Escalonado */}
                   {isProtocol && item.templateItem?.protocolDetail && (
-                    <div className="pl-6 text-[10px] font-mono font-semibold text-neutral-800 mt-0.5 tracking-tighter">
-                      {item.templateItem.protocolDetail}
-                    </div>
+                    <tr key={`${item.id}-protocol`} className="h-[22px]">
+                      <td className="w-[65%] border-r-2 border-b border-black text-center text-[9pt] px-2">
+                        {item.templateItem.protocolDetail}
+                      </td>
+                      <td className="w-[35%] border-b border-black"></td>
+                    </tr>
                   )}
-                </div>
+                </>
+              );
+            })}
 
-                {/* Coluna Única de Horário da Enfermagem (sem subdivisões) */}
-                <div className="col-span-4 bg-white"></div>
-              </div>
-            );
-          })}
-
-          {/* Linhas em branco adicionais para preencher a folha até o fim */}
-          {Array.from({ length: emptyRowsCount }).map((_, emptyIdx) => (
-            <div
-              key={`empty-${emptyIdx}`}
-              className="grid grid-cols-12 min-h-[25px] items-stretch"
-            >
-              <div className="col-span-8 p-1.5 border-r border-black font-mono text-[11px] text-neutral-400">
-                {prescription.items.length + emptyIdx + 1}-
-              </div>
-              <div className="col-span-4 bg-white"></div>
-            </div>
-          ))}
-        </div>
-
-        {/* Rodapé: Assinatura e Carimbo (No canto inferior esquerdo conforme modelo Excel) */}
-        <div className="border border-black p-2 min-h-[48px] flex items-start justify-between text-xs font-bold">
-          <span className="tracking-wide">Assinatura e carimbo:</span>
-          <span className="text-[10px] font-normal text-neutral-400 no-print">
-            {prescription.template.name}
-          </span>
-        </div>
+            {/* Linhas vazias */}
+            {Array.from({ length: emptyRowsCount }).map((_, emptyIdx) => (
+              <tr key={`empty-${emptyIdx}`} className="h-[22px]">
+                <td className="w-[65%] border-r-2 border-b border-black"></td>
+                <td className="w-[35%] border-b border-black"></td>
+              </tr>
+            ))}
+            
+            {/* Linha final da assinatura */}
+            <tr className="h-12 border-t-2 border-black">
+              <td colSpan={2} className="align-top font-bold pl-1 pt-1 border-none">
+                Assinatura e carimbo:
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Regras CSS para Impressão */}
@@ -180,12 +184,13 @@ export default async function PrintPrescriptionPage({
         @media print {
           @page {
             size: A4 landscape;
-            margin: 5mm 8mm;
+            margin: 10mm;
           }
           body {
             background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            padding: 0 !important;
           }
           .no-print {
             display: none !important;

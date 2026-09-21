@@ -17,6 +17,7 @@ interface TemplateItemDetail {
   defaultScheduleType: string;
   isProtocol: boolean;
   protocolDetail: string | null;
+  variants: string;
 }
 
 interface TemplateData {
@@ -59,6 +60,8 @@ export default function TemplateEditorPage({
   const [conditionText, setConditionText] = useState('');
   const [defaultScheduleType, setDefaultScheduleType] = useState('HORARIO');
   const [category, setCategory] = useState('MEDICAMENTO');
+  const [variantsList, setVariantsList] = useState<string[]>([]);
+  const [newVariant, setNewVariant] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,12 +91,35 @@ export default function TemplateEditorPage({
     setConditionText(item.conditionText || '');
     setDefaultScheduleType(item.defaultScheduleType || 'HORARIO');
     setCategory(item.category || 'MEDICAMENTO');
+    
+    let parsedVariants: string[] = [];
+    try {
+      if (item.variants) {
+        parsedVariants = JSON.parse(item.variants);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setVariantsList(parsedVariants);
+    setNewVariant('');
     setError('');
   }
 
   function closeEditModal() {
     setEditingItem(null);
     setError('');
+  }
+
+  function handleAddVariant() {
+    const trimmed = newVariant.trim();
+    if (!trimmed) return;
+    if (variantsList.includes(trimmed)) return;
+    setVariantsList([...variantsList, trimmed]);
+    setNewVariant('');
+  }
+
+  function handleRemoveVariant(v: string) {
+    setVariantsList(variantsList.filter(item => item !== v));
   }
 
   // Preview dinâmico do texto gerado
@@ -127,6 +153,7 @@ export default function TemplateEditorPage({
           conditionText: conditionText.trim(),
           defaultScheduleType,
           category,
+          variants: variantsList,
         }),
       });
 
@@ -354,6 +381,54 @@ export default function TemplateEditorPage({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Bloco 5: Variações (Apresentações alternativas) */}
+              <div className="border-t border-slate-100 pt-3 mt-3">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  Apresentações Alternativas (Variações)
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newVariant}
+                    onChange={(e) => setNewVariant(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddVariant();
+                      }
+                    }}
+                    placeholder="Ex: SF 0,9% 100ML"
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddVariant}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+                
+                {variantsList.length > 0 ? (
+                  <ul className="space-y-1">
+                    {variantsList.map((v, i) => (
+                      <li key={i} className="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700">
+                        <span>{v}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariant(v)}
+                          className="text-red-500 hover:text-red-700 font-bold px-1"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">Nenhuma variação cadastrada.</p>
+                )}
               </div>
 
               {/* Live Preview */}
