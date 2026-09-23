@@ -11,6 +11,9 @@ O desenvolvimento inicial focou em construir a base do sistema de plantões e pr
    - Funcionalidade de **Impressão em Lote** de todos os pacientes do plantão.
    - Fallback de contingência (Botão "Copiar p/ Excel").
 4. **Deploy Automático no Vercel** com banco de dados funcional.
+5. **Reordenação Visual de Modelos (Setas ⬆️/⬇️):** Botões nativos na tela de edição com reordenação atômica via batch transaction no banco.
+6. **Módulo de Protocolos Clínicos:** Ingestão do primeiro modelo por patologia (Tratamento de TVP com dose plena de Enoxaparina e Heparina Não Fracionada).
+7. **Isolamento de Segurança:** Pasta `docs/protocolos/` protegida via `.gitignore` para manter rascunhos clínicos isolados localmente.
 
 ---
 

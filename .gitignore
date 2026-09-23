@@ -30,6 +30,7 @@ apply-migration.mjs
 *.csv
 extracted_*.png
 /public/logos/instituicao-*.png
+/docs/protocolos/
 
 # === TypeScript & Next Cache ===
 *.tsbuildinfo
