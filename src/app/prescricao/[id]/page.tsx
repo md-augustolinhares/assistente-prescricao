@@ -173,6 +173,18 @@ export default function PrescriptionEditorPage({
     setItems((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function handleMoveItem(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    setItems((prev) => {
+      const next = [...prev];
+      const [movedItem] = next.splice(index, 1);
+      next.splice(targetIndex, 0, movedItem);
+      return next.map((it, idx) => ({ ...it, position: idx + 1 }));
+    });
+  }
+
   function handleSelectCatalogItem(catalogItem: CatalogItemData) {
     const newItem: ItemRow = {
       position: items.length + 1,
@@ -320,35 +332,72 @@ export default function PrescriptionEditorPage({
 
                   {/* Item Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {isEnabled ? (
-                        <span className="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-mono">
-                          {currentItemNumber}.
-                        </span>
-                      ) : (
-                        <span className="text-xs font-bold text-slate-400 line-through">
-                          Inativo
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isEnabled ? (
+                          <span className="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-mono">
+                            {currentItemNumber}.
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-slate-400 line-through">
+                            Inativo
+                          </span>
+                        )}
 
-                      {/* Tag de categoria */}
-                      {item.templateItem?.category && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                          {item.templateItem.category}
-                        </span>
-                      )}
+                        {/* Tag de categoria */}
+                        {item.templateItem?.category && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            {item.templateItem.category}
+                          </span>
+                        )}
 
-                      {item.isManual && (
-                        <span className="text-[10px] font-bold uppercase text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-                          Item Manual
-                        </span>
-                      )}
+                        {item.isManual && (
+                          <span className="text-[10px] font-bold uppercase text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                            Item Manual
+                          </span>
+                        )}
 
-                      {item.catalogItemId && (
-                        <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-                          Especial
-                        </span>
-                      )}
+                        {item.catalogItemId && (
+                          <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                            Especial
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Botões de Reordenação e Ações */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                          <button
+                            type="button"
+                            title="Mover para cima"
+                            disabled={index === 0}
+                            onClick={() => handleMoveItem(index, 'up')}
+                            className="w-6 h-6 flex items-center justify-center rounded hover:bg-white text-slate-600 hover:text-blue-600 disabled:opacity-25 disabled:hover:bg-transparent text-[11px] font-bold transition"
+                          >
+                            ⬆️
+                          </button>
+                          <button
+                            type="button"
+                            title="Mover para baixo"
+                            disabled={index === items.length - 1}
+                            onClick={() => handleMoveItem(index, 'down')}
+                            className="w-6 h-6 flex items-center justify-center rounded hover:bg-white text-slate-600 hover:text-blue-600 disabled:opacity-25 disabled:hover:bg-transparent text-[11px] font-bold transition"
+                          >
+                            ⬇️
+                          </button>
+                        </div>
+
+                        {(item.isManual || item.catalogItemId) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteItem(index)}
+                            className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition text-xs"
+                            title="Remover item da prescrição"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Descrição do Item (com input se for editável ou manual) */}
@@ -445,17 +494,6 @@ export default function PrescriptionEditorPage({
                     </div>
                   </div>
 
-                  {/* Ação de excluir para itens adicionais manuais ou de catálogo */}
-                  {(item.isManual || item.catalogItemId) && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteItem(index)}
-                      className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition text-xs"
-                      title="Remover item da prescrição"
-                    >
-                      ✕
-                    </button>
-                  )}
                 </div>
               </div>
             );
