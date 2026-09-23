@@ -64,10 +64,11 @@ export default function TemplateEditorPage({
   const [newVariant, setNewVariant] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
-  async function loadTemplate() {
+  async function loadTemplate(showLoading = true) {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/templates/${id}`);
       if (!res.ok) return;
       const data = await res.json();
@@ -75,7 +76,25 @@ export default function TemplateEditorPage({
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
+    }
+  }
+
+  async function handleReorder(itemId: string, direction: 'up' | 'down') {
+    try {
+      setReorderingId(itemId);
+      const res = await fetch(`/api/templates/${id}/items/${itemId}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction }),
+      });
+      if (res.ok) {
+        await loadTemplate(false);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setReorderingId(null);
     }
   }
 
@@ -251,14 +270,38 @@ export default function TemplateEditorPage({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => openEditModal(item)}
-                  className="self-start sm:self-center text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center gap-1"
-                >
-                  <span>✏️</span>
-                  <span>Editar Item</span>
-                </button>
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  {/* Botões de Reordenação */}
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      title="Mover para cima"
+                      disabled={index === 0 || reorderingId !== null}
+                      onClick={() => handleReorder(item.id, 'up')}
+                      className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white text-slate-600 hover:text-blue-600 disabled:opacity-25 disabled:hover:bg-transparent text-xs font-bold transition"
+                    >
+                      {reorderingId === item.id ? '...' : '⬆️'}
+                    </button>
+                    <button
+                      type="button"
+                      title="Mover para baixo"
+                      disabled={index === template.items.length - 1 || reorderingId !== null}
+                      onClick={() => handleReorder(item.id, 'down')}
+                      className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white text-slate-600 hover:text-blue-600 disabled:opacity-25 disabled:hover:bg-transparent text-xs font-bold transition"
+                    >
+                      {reorderingId === item.id ? '...' : '⬇️'}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(item)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center gap-1"
+                  >
+                    <span>✏️</span>
+                    <span>Editar Item</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
