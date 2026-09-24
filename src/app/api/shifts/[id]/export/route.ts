@@ -44,6 +44,39 @@ export async function GET(
 
     const workbook = new ExcelJS.Workbook();
 
+    const logoPath = process.env.INSTITUTION_LOGO_PATH;
+    let imageId: number | undefined;
+
+    if (logoPath) {
+      try {
+        let buffer: Buffer | undefined;
+        let ext = 'png';
+        if (logoPath.toLowerCase().endsWith('.jpg') || logoPath.toLowerCase().endsWith('.jpeg')) ext = 'jpeg';
+        
+        if (logoPath.startsWith('http')) {
+          const res = await fetch(logoPath);
+          if (res.ok) {
+            const arrBuffer = await res.arrayBuffer();
+            buffer = Buffer.from(arrBuffer);
+          }
+        } else {
+          // Local fallback
+          const fs = require('fs');
+          const path = require('path');
+          buffer = fs.readFileSync(path.join(process.cwd(), 'public', logoPath));
+        }
+
+        if (buffer) {
+          imageId = workbook.addImage({
+            buffer: buffer as any,
+            extension: ext as 'png' | 'jpeg',
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load image for excel', e);
+      }
+    }
+
     for (const prescription of shift.prescriptions) {
       const formattedDate = new Date(prescription.prescriptionDate).toLocaleDateString(
         'pt-BR',
@@ -82,6 +115,13 @@ export async function GET(
       titleCell.font = { name: 'Arial', size: 20, bold: true };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       worksheet.getRow(1).height = 70;
+      
+      if (imageId !== undefined) {
+        worksheet.addImage(imageId, {
+          tl: { col: 0.1, row: 0.1 },
+          ext: { width: 70, height: 70 }
+        });
+      }
       
       titleCell.border = {
         bottom: { style: 'medium' },
