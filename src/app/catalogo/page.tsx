@@ -16,6 +16,7 @@ const CATEGORIES = [
   { label: 'Medicamentos', value: 'MEDICAMENTO' },
   { label: 'Hidratação', value: 'HIDRATACAO' },
   { label: 'Cuidados / Dieta', value: 'CUIDADO' },
+  { label: 'Condicionais (PRN)', value: 'CONDICIONAL' },
   { label: 'Antibióticos', value: 'ANTIBIOTICO' },
   { label: 'Anticoagulantes', value: 'ANTICOAGULANTE' },
   { label: 'Eletrólitos / Sondas', value: 'ELETROLITO' },
@@ -33,6 +34,7 @@ export default function CatalogPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [fullDescription, setFullDescription] = useState('');
+  const [variantsText, setVariantsText] = useState('');
   const [category, setCategory] = useState('MEDICAMENTO');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -58,7 +60,8 @@ export default function CatalogPage() {
     setEditingId(null);
     setName('');
     setFullDescription('');
-    setCategory('ANTIBIOTICO');
+    setVariantsText('');
+    setCategory('MEDICAMENTO');
     setError('');
     setIsModalOpen(true);
   }
@@ -68,6 +71,13 @@ export default function CatalogPage() {
     setName(item.name);
     setFullDescription(item.fullDescription);
     setCategory(item.category);
+    
+    // Parse variants for text area
+    const parsedVariants = item.variants ? JSON.parse(item.variants) : [];
+    // Remove the primary description from the variants text box to avoid confusion, 
+    // or just show all of them. The easiest is to show all of them, so the user can edit any.
+    setVariantsText(parsedVariants.join('\n'));
+    
     setError('');
     setIsModalOpen(true);
   }
@@ -83,13 +93,25 @@ export default function CatalogPage() {
       const url = editingId ? `/api/catalog/${editingId}` : '/api/catalog';
       const method = editingId ? 'PUT' : 'POST';
 
+      // Build variants JSON
+      const variantsArray = variantsText
+        .split('\n')
+        .map(v => v.trim())
+        .filter(Boolean);
+        
+      // Ensure the fullDescription is inside the variants if we are using them
+      if (variantsArray.length > 0 && !variantsArray.includes(fullDescription.trim())) {
+        variantsArray.unshift(fullDescription.trim());
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          fullDescription: fullDescription.toUpperCase().trim(),
+          fullDescription: fullDescription.trim(), // removed force toUpperCase to let user decide
           category,
+          variants: JSON.stringify(variantsArray),
         }),
       });
 
@@ -286,15 +308,30 @@ export default function CatalogPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Posologia Completa para Impressão
+                  Posologia Principal para Impressão
                 </label>
                 <textarea
                   value={fullDescription}
                   onChange={(e) => setFullDescription(e.target.value)}
-                  placeholder="Ex: CEFTRIAXONA 1G + 100ML SF 0,9% EV 12/12H"
-                  rows={3}
+                  placeholder="Ex: DIETA GERAL"
+                  rows={2}
                   className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs uppercase font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Variações de Apresentação</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Opcional</span>
+                </label>
+                <p className="text-[10px] text-slate-500 mb-1.5">Insira uma variação por linha. Elas aparecerão como opções na prescrição.</p>
+                <textarea
+                  value={variantsText}
+                  onChange={(e) => setVariantsText(e.target.value)}
+                  placeholder={`Ex:\nDIETA BRANDA\nDIETA PASTOSA\nDIETA ZERO`}
+                  rows={4}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs uppercase font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
@@ -310,6 +347,7 @@ export default function CatalogPage() {
                   <option value="MEDICAMENTO">Medicamento Geral</option>
                   <option value="HIDRATACAO">Hidratação / Soroterapia</option>
                   <option value="CUIDADO">Cuidados / Dieta</option>
+                  <option value="CONDICIONAL">Condicionais (PRN)</option>
                   <option value="ANTIBIOTICO">Antibiótico</option>
                   <option value="ANTICOAGULANTE">Anticoagulante</option>
                   <option value="ELETROLITO">Eletrólito (Correção Na/K)</option>
