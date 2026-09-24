@@ -511,7 +511,7 @@ export default function PrescriptionEditorPage({
         {/* Seção de Adição de Especiais e Texto Livre */}
         <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-            Adicionar Medicamento Especial ou Cuidados
+            Adicionar Item Adicional ao Paciente
           </h3>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -521,7 +521,7 @@ export default function PrescriptionEditorPage({
               className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm"
             >
               <span>📦</span>
-              <span>Buscar no Catálogo de Especiais</span>
+              <span>Buscar no Catálogo Geral</span>
             </button>
 
             {!isAddingManual ? (
