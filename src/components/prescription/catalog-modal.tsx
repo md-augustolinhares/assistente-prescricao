@@ -21,6 +21,7 @@ const CATEGORIES = [
   { label: 'Medicamentos', value: 'MEDICAMENTO' },
   { label: 'Hidratação', value: 'HIDRATACAO' },
   { label: 'Cuidados / Dieta', value: 'CUIDADO' },
+  { label: 'Condicionais (PRN)', value: 'CONDICIONAL' },
   { label: 'Antibióticos', value: 'ANTIBIOTICO' },
   { label: 'Anticoagulantes', value: 'ANTICOAGULANTE' },
   { label: 'Eletrólitos / Sondas', value: 'ELETROLITO' },

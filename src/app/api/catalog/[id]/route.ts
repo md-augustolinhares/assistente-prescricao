@@ -5,7 +5,8 @@ import { z } from 'zod';
 const updateCatalogItemSchema = z.object({
   name: z.string().min(2).optional(),
   fullDescription: z.string().min(3).optional(),
-  category: z.enum(['MEDICAMENTO', 'HIDRATACAO', 'CUIDADO', 'DIETA', 'ANTIBIOTICO', 'ANTICOAGULANTE', 'ELETROLITO', 'SONDA', 'OUTRO']).optional(),
+  category: z.enum(['MEDICAMENTO', 'HIDRATACAO', 'CUIDADO', 'DIETA', 'ANTIBIOTICO', 'ANTICOAGULANTE', 'ELETROLITO', 'SONDA', 'CONDICIONAL', 'OUTRO']).optional(),
+  variants: z.string().optional(),
 });
 
 export async function PUT(
