@@ -147,14 +147,24 @@ export default function ShiftPage({
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
             {shift.prescriptions.length > 0 && (
-              <Link
-                href={`/plantao/${shift.id}/imprimir`}
-                target="_blank"
-                className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
-              >
-                <span>🖨️</span>
-                <span>Imprimir Plantão</span>
-              </Link>
+              <>
+                <a
+                  href={`/api/shifts/${shift.id}/export`}
+                  download
+                  className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
+                >
+                  <span>📥</span>
+                  <span>Baixar Excel</span>
+                </a>
+                <Link
+                  href={`/plantao/${shift.id}/imprimir`}
+                  target="_blank"
+                  className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
+                >
+                  <span>🖨️</span>
+                  <span>Imprimir Plantão</span>
+                </Link>
+              </>
             )}
             <button
               onClick={() => setIsModalOpen(true)}
