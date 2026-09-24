@@ -43,7 +43,8 @@ model CatalogItem {
   id                String              @id @default(cuid())
   name              String
   fullDescription   String
-  category          String              // ANTIBIOTICO, ANTICOAGULANTE, ELETROLITO, SONDA, OUTRO
+  category          String              // MEDICAMENTO, HIDRATACAO, CUIDADO, DIETA, ANTIBIOTICO, ANTICOAGULANTE, ELETROLITO, SONDA, OUTRO
+  variants          String?             @default("[]") // Variantes em formato JSON
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   prescriptionItems PrescriptionItem[]

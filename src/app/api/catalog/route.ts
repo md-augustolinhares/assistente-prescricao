@@ -5,7 +5,7 @@ import { z } from 'zod';
 const createCatalogItemSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
   fullDescription: z.string().min(3, 'Descrição necessária'),
-  category: z.enum(['ANTIBIOTICO', 'ANTICOAGULANTE', 'ELETROLITO', 'SONDA', 'OUTRO']),
+  category: z.enum(['MEDICAMENTO', 'HIDRATACAO', 'CUIDADO', 'DIETA', 'ANTIBIOTICO', 'ANTICOAGULANTE', 'ELETROLITO', 'SONDA', 'OUTRO']),
 });
 
 export async function GET(request: Request) {
