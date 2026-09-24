@@ -7,6 +7,7 @@ export interface CatalogItemData {
   name: string;
   fullDescription: string;
   category: string;
+  variants?: string;
 }
 
 interface CatalogModalProps {
