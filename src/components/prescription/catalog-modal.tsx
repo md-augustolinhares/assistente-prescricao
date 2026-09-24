@@ -17,10 +17,12 @@ interface CatalogModalProps {
 
 const CATEGORIES = [
   { label: 'Todos', value: 'ALL' },
+  { label: 'Medicamentos', value: 'MEDICAMENTO' },
+  { label: 'Hidratação', value: 'HIDRATACAO' },
+  { label: 'Cuidados / Dieta', value: 'CUIDADO' },
   { label: 'Antibióticos', value: 'ANTIBIOTICO' },
   { label: 'Anticoagulantes', value: 'ANTICOAGULANTE' },
-  { label: 'Eletrólitos', value: 'ELETROLITO' },
-  { label: 'Sondas', value: 'SONDA' },
+  { label: 'Eletrólitos / Sondas', value: 'ELETROLITO' },
   { label: 'Outros', value: 'OUTRO' },
 ];
 
@@ -67,7 +69,7 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
         <div className="p-5 border-b border-slate-200 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-800">
-              Catálogo de Medicamentos Especiais
+              Catálogo Geral de Medicações e Cuidados
             </h2>
             <p className="text-xs text-slate-500">
               Clique em qualquer item para adicionar imediatamente à prescrição
