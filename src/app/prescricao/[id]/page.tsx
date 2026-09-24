@@ -266,6 +266,14 @@ export default function PrescriptionEditorPage({
 
           <div className="flex items-center gap-2">
             <CopyButton items={items.filter(i => i.isEnabled)} />
+            <a
+              href={`/api/prescriptions/${prescription.id}/export`}
+              download
+              className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5"
+            >
+              <span>📥</span>
+              <span>Baixar Excel</span>
+            </a>
             <Link
               href={`/prescricao/${prescription.id}/imprimir`}
               target="_blank"
