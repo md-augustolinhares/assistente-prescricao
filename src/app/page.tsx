@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { CreateShiftModal } from '@/components/shift/create-shift-modal';
+import { DuplicateShiftModal } from '@/components/shift/duplicate-shift-modal';
 
 interface TemplateItem {
   id: string;
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [templates, setTemplates] = useState<TemplateData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [duplicateShiftInfo, setDuplicateShiftInfo] = useState<{ id: string; dateStr: string } | null>(null);
 
   async function loadData() {
     try {
@@ -137,13 +139,22 @@ export default function HomePage() {
                         <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg">
                           {dateStr}
                         </span>
-                        <button
-                          onClick={() => handleDeleteShift(shift.id, dateStr)}
-                          className="text-slate-300 hover:text-red-500 p-1 rounded-md transition text-xs"
-                          title="Excluir plantão"
-                        >
-                          🗑️
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setDuplicateShiftInfo({ id: shift.id, dateStr })}
+                            className="text-slate-300 hover:text-blue-500 p-1 rounded-md transition text-xs"
+                            title="Duplicar plantão"
+                          >
+                            📋
+                          </button>
+                          <button
+                            onClick={() => handleDeleteShift(shift.id, dateStr)}
+                            className="text-slate-300 hover:text-red-500 p-1 rounded-md transition text-xs"
+                            title="Excluir plantão"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
 
                       <h3 className="font-extrabold text-slate-800 text-base group-hover:text-blue-600 transition capitalize">
@@ -249,6 +260,14 @@ export default function HomePage() {
           setIsModalOpen(false);
           loadData();
         }}
+      />
+
+      <DuplicateShiftModal
+        isOpen={!!duplicateShiftInfo}
+        shiftId={duplicateShiftInfo?.id || null}
+        shiftDateStr={duplicateShiftInfo?.dateStr || null}
+        onClose={() => setDuplicateShiftInfo(null)}
+        onSuccess={() => loadData()}
       />
     </div>
   );

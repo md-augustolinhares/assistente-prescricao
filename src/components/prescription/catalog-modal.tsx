@@ -13,7 +13,7 @@ export interface CatalogItemData {
 interface CatalogModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectItem: (item: CatalogItemData) => void;
+  onSelectItem: (item: CatalogItemData, insertAt: 'top' | 'bottom') => void;
 }
 
 const CATEGORIES = [
@@ -34,6 +34,7 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
   const [category, setCategory] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [insertAt, setInsertAt] = useState<'top' | 'bottom'>('bottom');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -74,14 +75,32 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
             <h2 className="text-lg font-bold text-slate-800">
               Catálogo Geral de Medicações e Cuidados
             </h2>
-            <p className="text-xs text-slate-500">
-              Escolha a apresentação e clique em adicionar à prescrição
-            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                Posição de Inserção:
+              </span>
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setInsertAt('top')}
+                  className={`text-[11px] font-bold px-3 py-1 rounded-md transition ${insertAt === 'top' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  ⬆️ Topo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInsertAt('bottom')}
+                  className={`text-[11px] font-bold px-3 py-1 rounded-md transition ${insertAt === 'bottom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  ⬇️ Final
+                </button>
+              </div>
+            </div>
           </div>
           <button
             onClick={onClose}
             type="button"
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition self-start"
           >
             ✕
           </button>
@@ -167,7 +186,7 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
                     <button
                       type="button"
                       onClick={() => {
-                        onSelectItem({ ...item, fullDescription: currentDesc });
+                        onSelectItem({ ...item, fullDescription: currentDesc }, insertAt);
                         onClose();
                       }}
                       className="mt-1 flex-shrink-0 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition shadow-sm"
