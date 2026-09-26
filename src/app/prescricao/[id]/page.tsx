@@ -185,9 +185,9 @@ export default function PrescriptionEditorPage({
     });
   }
 
-  function handleSelectCatalogItem(catalogItem: CatalogItemData) {
+  function handleSelectCatalogItem(catalogItem: CatalogItemData, insertAt: 'top' | 'bottom' = 'bottom') {
     const newItem: ItemRow = {
-      position: items.length + 1,
+      position: 0, // will be mapped
       description: catalogItem.fullDescription,
       baseText: catalogItem.fullDescription,
       scheduleType: 'HORARIO',
@@ -195,7 +195,11 @@ export default function PrescriptionEditorPage({
       isManual: false,
       catalogItemId: catalogItem.id,
     };
-    setItems((prev) => [...prev, newItem]);
+    
+    setItems((prev) => {
+      const next = insertAt === 'top' ? [newItem, ...prev] : [...prev, newItem];
+      return next.map((it, idx) => ({ ...it, position: idx + 1 }));
+    });
   }
 
   function handleAddManualItem(e: React.FormEvent) {
