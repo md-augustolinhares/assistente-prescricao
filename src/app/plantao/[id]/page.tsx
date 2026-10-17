@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { CreatePrescriptionModal } from '@/components/shift/create-prescription-modal';
+import { EditShiftModal } from '@/components/shift/edit-shift-modal';
 
 interface PrescriptionSummary {
   id: string;
@@ -35,7 +36,11 @@ export default function ShiftPage({
   const [shift, setShift] = useState<ShiftDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditShiftOpen, setIsEditShiftOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingPatient, setRenamingPatient] = useState<{ id: string; name: string } | null>(null);
+  const [newPatientName, setNewPatientName] = useState('');
+  const [renamingLoading, setRenamingLoading] = useState(false);
 
   async function loadShift() {
     try {
@@ -96,6 +101,32 @@ export default function ShiftPage({
     }
   }
 
+  async function handleRenameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renamingPatient || !newPatientName.trim()) return;
+
+    try {
+      setRenamingLoading(true);
+      const res = await fetch(`/api/prescriptions/${renamingPatient.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientName: newPatientName.trim() }),
+      });
+
+      if (res.ok) {
+        setRenamingPatient(null);
+        await loadShift();
+      } else {
+        alert('Erro ao renomear paciente.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao renomear paciente.');
+    } finally {
+      setRenamingLoading(false);
+    }
+  }
+
   if (loading || !shift) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -134,6 +165,15 @@ export default function ShiftPage({
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
                 Plantão Ativo
               </span>
+              <button
+                type="button"
+                onClick={() => setIsEditShiftOpen(true)}
+                className="text-xs font-semibold text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2.5 py-0.5 rounded-md transition flex items-center gap-1"
+                title="Alterar data ou observação do plantão"
+              >
+                <span>✏️</span>
+                <span>Alterar Data</span>
+              </button>
             </div>
             <h1 className="text-2xl font-black text-slate-800 capitalize mt-2">
               {formattedDate}
@@ -219,30 +259,55 @@ export default function ShiftPage({
                       </span>
                     </div>
 
-                    <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide group-hover:text-blue-600 transition">
-                      {p.patientName}
-                    </h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide group-hover:text-blue-600 transition">
+                        {p.patientName}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRenamingPatient({ id: p.id, name: p.patientName });
+                          setNewPatientName(p.patientName);
+                        }}
+                        className="text-xs text-slate-400 hover:text-blue-600 p-1 rounded-md hover:bg-blue-50 transition"
+                        title="Renomear paciente"
+                      >
+                        ✏️
+                      </button>
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">
                       {p._count.items} itens configurados
                     </p>
                   </div>
 
                   <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleDeletePrescription(p.id, p.patientName)}
-                      disabled={deletingId === p.id}
-                      className="text-xs text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"
-                      title="Excluir prescrição"
-                    >
-                      🗑️
-                    </button>
-                    <button
-                      onClick={() => handleDuplicatePrescription(p.id, p.patientName)}
-                      className="text-xs text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ml-2"
-                      title="Duplicar prescrição"
-                    >
-                      📋 Copiar
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDeletePrescription(p.id, p.patientName)}
+                        disabled={deletingId === p.id}
+                        className="text-xs text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"
+                        title="Excluir prescrição"
+                      >
+                        🗑️
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRenamingPatient({ id: p.id, name: p.patientName });
+                          setNewPatientName(p.patientName);
+                        }}
+                        className="text-xs text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"
+                        title="Editar nome do paciente"
+                      >
+                        ✏️ Renomear
+                      </button>
+                      <button
+                        onClick={() => handleDuplicatePrescription(p.id, p.patientName)}
+                        className="text-xs text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"
+                        title="Duplicar prescrição"
+                      >
+                        📋 Copiar
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-2">
                       <Link
@@ -276,6 +341,73 @@ export default function ShiftPage({
         }}
         shiftId={shift.id}
       />
+
+      <EditShiftModal
+        isOpen={isEditShiftOpen}
+        shiftId={shift.id}
+        currentDate={shift.shiftDate}
+        currentNotes={shift.notes}
+        onClose={() => setIsEditShiftOpen(false)}
+        onSuccess={() => loadShift()}
+      />
+
+      {renamingPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-800">
+                Renomear Paciente
+              </h2>
+              <button
+                onClick={() => setRenamingPatient(null)}
+                type="button"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRenameSubmit} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="renamePatientInput"
+                  className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1"
+                >
+                  Nome do Paciente
+                </label>
+                <input
+                  id="renamePatientInput"
+                  type="text"
+                  value={newPatientName}
+                  onChange={(e) => setNewPatientName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-800 text-sm font-bold uppercase"
+                  placeholder="Digite o nome completo..."
+                  autoFocus
+                  required
+                  minLength={2}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setRenamingPatient(null)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={renamingLoading || newPatientName.trim().length < 2}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-blue-600/20 disabled:opacity-50 transition"
+                >
+                  {renamingLoading ? 'Salvando...' : 'Salvar Nome'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

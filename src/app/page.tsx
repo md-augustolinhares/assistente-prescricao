@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { CreateShiftModal } from '@/components/shift/create-shift-modal';
 import { DuplicateShiftModal } from '@/components/shift/duplicate-shift-modal';
+import { EditShiftModal } from '@/components/shift/edit-shift-modal';
 
 interface TemplateItem {
   id: string;
@@ -34,6 +35,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [duplicateShiftInfo, setDuplicateShiftInfo] = useState<{ id: string; dateStr: string } | null>(null);
+  const [editShiftInfo, setEditShiftInfo] = useState<{ id: string; shiftDate: string; notes: string | null } | null>(null);
 
   async function loadData() {
     try {
@@ -140,6 +142,13 @@ export default function HomePage() {
                           {dateStr}
                         </span>
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditShiftInfo({ id: shift.id, shiftDate: shift.shiftDate, notes: shift.notes })}
+                            className="text-slate-300 hover:text-blue-500 p-1 rounded-md transition text-xs"
+                            title="Editar data e observações do plantão"
+                          >
+                            ✏️
+                          </button>
                           <button
                             onClick={() => setDuplicateShiftInfo({ id: shift.id, dateStr })}
                             className="text-slate-300 hover:text-blue-500 p-1 rounded-md transition text-xs"
@@ -267,6 +276,15 @@ export default function HomePage() {
         shiftId={duplicateShiftInfo?.id || null}
         shiftDateStr={duplicateShiftInfo?.dateStr || null}
         onClose={() => setDuplicateShiftInfo(null)}
+        onSuccess={() => loadData()}
+      />
+
+      <EditShiftModal
+        isOpen={!!editShiftInfo}
+        shiftId={editShiftInfo?.id || null}
+        currentDate={editShiftInfo?.shiftDate || null}
+        currentNotes={editShiftInfo?.notes || null}
+        onClose={() => setEditShiftInfo(null)}
         onSuccess={() => loadData()}
       />
     </div>

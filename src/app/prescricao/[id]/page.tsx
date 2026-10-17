@@ -60,6 +60,9 @@ export default function PrescriptionEditorPage({
   const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
   const [patientName, setPatientName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
@@ -220,6 +223,32 @@ export default function PrescriptionEditorPage({
     setIsAddingManual(false);
   }
 
+  async function handleSavePatientName(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editedName.trim() || editedName.trim().length < 2) return;
+
+    try {
+      setSavingName(true);
+      const res = await fetch(`/api/prescriptions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientName: editedName.trim() }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setPatientName(updated.patientName);
+        setIsEditingName(false);
+      } else {
+        alert('Erro ao atualizar nome do paciente.');
+      }
+    } catch {
+      alert('Erro de conexão ao salvar nome.');
+    } finally {
+      setSavingName(false);
+    }
+  }
+
   // Contagem de numeração sequencial ativa para impressão
   let activeCounter = 0;
 
@@ -254,7 +283,7 @@ export default function PrescriptionEditorPage({
 
         {/* Patient and Model Header Card */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md">
                 {prescription.template.name}
@@ -263,9 +292,52 @@ export default function PrescriptionEditorPage({
                 {new Date(prescription.prescriptionDate).toLocaleDateString('pt-BR')}
               </span>
             </div>
-            <h1 className="text-xl font-black text-slate-900 uppercase tracking-wide">
-              {patientName}
-            </h1>
+
+            {isEditingName ? (
+              <form onSubmit={handleSavePatientName} className="flex items-center gap-2 mt-1">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="px-3 py-1.5 border border-blue-400 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base font-black text-slate-900 uppercase tracking-wide w-full max-w-sm"
+                  autoFocus
+                  required
+                  minLength={2}
+                />
+                <button
+                  type="submit"
+                  disabled={savingName || editedName.trim().length < 2}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition disabled:opacity-50"
+                >
+                  {savingName ? '...' : '✓ Salvar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(false)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-2 rounded-xl transition"
+                >
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black text-slate-900 uppercase tracking-wide">
+                  {patientName}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditedName(patientName);
+                    setIsEditingName(true);
+                  }}
+                  className="text-xs text-slate-400 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition flex items-center gap-1 font-medium"
+                  title="Editar nome do paciente"
+                >
+                  <span>✏️</span>
+                  <span className="hidden sm:inline">Editar</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
