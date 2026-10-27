@@ -56,3 +56,5 @@ Thumbs.db
 
 .vercel
 .env*
+
+firebase-debug.log*
