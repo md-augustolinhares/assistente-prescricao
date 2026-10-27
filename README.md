@@ -1,63 +1,74 @@
 # 🏥 Assistente de Prescrição Médica
 
-> **Status:** MVP Funcional | **Tipo:** Ferramenta Clínica (HealthTech) / Case de Portfólio
+> **Status:** Em Produção | **Arquitetura:** Serverless Google Cloud / Firebase (Plano Spark 100% Gratuito) | **Tipo:** Ferramenta Clínica (HealthTech) / Case de Portfólio
 
-Uma aplicação web responsiva desenvolvida para agilizar a elaboração de prescrições hospitalares em enfermarias clínicas e prontos-socorros.
+Uma aplicação web moderna, ultra-rápida e responsiva desenvolvida para agilizar a elaboração de prescrições hospitalares em enfermarias clínicas, unidades de internação e prontos-socorros.
 
-Este projeto nasce de uma **dor clínica real**: substituir fluxos manuais baseados em copiar e colar células no Excel ou editores de texto genéricos por um sistema estruturado, desenhado para a ergonomia do médico plantonista. 
+Este projeto nasce de uma **dor clínica real**: substituir fluxos manuais e lentos baseados em copiar e colar células no Excel ou editores genéricos por um sistema estruturado, desenhado sob medida para a ergonomia e velocidade do médico plantonista.
 
 ---
 
 ## 🎯 O Problema & A Solução de Produto
 
-Em plantões de emergência e enfermarias, a transcrição e formatação da prescrição médica diária consome tempo significativo. O uso de planilhas gera atrito mecânico e formatações inconsistentes na impressão.
+Em plantões de emergência e enfermarias, a transcrição e formatação da prescrição médica diária consome tempo precioso. O uso de planilhas gera atrito mecânico, erros de formatação na impressão e risco de perdas acidentais.
 
-**A Solução:** Um sistema focado na **redução de carga cognitiva e clique-mínimo**. O aplicativo traz modelos clínicos pré-configurados, gestão de variações (ex: alternar rapidamente a dosagem de uma hidratação sem reescrever a via e frequência) e uma arquitetura *White-Label*, permitindo ser implantado em qualquer instituição.
+**A Solução:** Um sistema centrado na **redução de carga cognitiva e clique-mínimo**:
+- Modelos clínicos pré-configurados prontos para uso.
+- Modularidade para alternar apresentações de medicamentos em segundos mantendo o aprazamento intacto.
+- Gestão multi-instituições com cabeçalhos e brasões dinâmicos.
+- Totalmente *White-Label*: nenhum dado sensível de instituição ou de pacientes é comitado no código.
 
-> **Autonomia Clínica Preservada:** O sistema atua exclusivamente na formatação e estruturação ágil do documento. **Nenhum modelo de IA sugere doses, diagnósticos ou condutas.** Toda a decisão clínica parte do médico, que assina e carimba o documento final.
+> **Autonomia Clínica Preservada:** O sistema atua na formatação e estruturação ágil do documento. **Nenhum modelo de IA sugere doses, diagnósticos ou condutas.** Toda a decisão clínica parte exclusivamente do médico, que assina e carimba o documento final impresso.
 
 ---
 
 ## 🚀 Funcionalidades Principais (Highlights)
 
-- ⚡ **Velocidade e Ergonomia:** Interface focada em produtividade. Criação de prescrições estruturadas com o mínimo de cliques.
+- ⚡ **Velocidade e Ergonomia:** Interface focada em produtividade. Criação e edição de prescrições completas com o mínimo de cliques.
 - 📋 **Modelos Clínicos Estruturados (Framework FAST-HUG):**
-  - Desenvolvidos com base na mnemônica FAST-HUG (adaptada para enfermarias clínicas), garantindo a checagem diária de analgesia, profilaxia de úlcera, profilaxia de TVP, controle glicêmico e dieta.
-  - **Prescrição Geral:** Enfermaria clínica padrão com todos os itens de suporte.
-  - **Prescrição Psiquiátrica:** Foco em medicações VO/IM e manejo comportamental.
-  - **Prescrição para Broncoespasmo:** Protocolos de broncodilatação e corticoterapia.
-- 🔄 **Modularidade e Variações Dinâmicas:**
-  - Ajuste rápido de apresentação (ex: `SF 0,9% 500ml` vs `100ml`) mantendo o aprazamento intacto.
-  - Seleção de aprazamento clínico nativo: `ACM` (A critério médico), `Horário Fixo`, `SN` (Se necessário) ou `Condicional`.
-- 🖨️ **Motor de Impressão Pixel-Perfect (HTML/CSS):** 
-  - Layout nativo para papel **A4 Paisagem**, seguindo os padrões oficias de prontuários em papel.
-  - **Impressão em Lote (Batch Print):** Imprima as folhas de todos os pacientes do plantão ativo com um único clique.
-- 🔒 **Segurança, Privacidade & White-Label:**
-  - **Zero dados sensíveis:** Nenhum dado institucional ou de paciente real transita pelos repositórios de código. O projeto é 100% genérico. Logomarcas e nomes de hospitais são injetados exclusivamente via **Variáveis de Ambiente** no deploy em produção.
-  - **Ausência de dados reais de pacientes:** O sistema é uma ferramenta de rascunho de plantão. Não há integração de dados reais do paciente ou prontuário eletrônico. Nomes digitados não persistem em logs ou histórico do repositório.
-  - Autenticação própria via JWT (Expiração de 36h) ideal para computadores compartilhados.
+  - Desenvolvidos com base na mnemônica FAST-HUG adaptada para enfermarias, checando analgesia, profilaxia de úlcera de estresse, profilaxia de TEV/TVP, controle glicêmico, hidratação e dieta.
+  - Editor visual para ajustar medicamentos de cada modelo base.
+- 🔄 **Modularidade e Variações Rápidas:**
+  - Troca dinâmica de apresentações (ex: alternar `SF 0,9% 500ml` vs `100ml`) preservando via e posologia.
+  - Seletor de aprazamento clínico: `Horário Fixo`, `ACM` (A critério médico), `SN` (Se necessário) ou `Condicional`.
+- 🏛️ **Gestão Multi-Instituições (Novo):**
+  - Cadastre e alterne entre diferentes hospitais, prefeituras ou clínicas onde você atende.
+  - Upload de brasão/logotipo (PNG/JPG) convertido automaticamente para Base64 e salvo no banco de dados.
+  - Cada plantão pode ser associado ao seu respectivo hospital.
+- 🖨️ **Motor de Impressão Pixel-Perfect (HTML/CSS):**
+  - Layout nativo para folha **A4 Paisagem**, seguindo os padrões oficiais de prontuários médicos hospitalares.
+  - **Impressão em Lote (Batch Print):** Imprima as fichas de todos os pacientes do plantão ativo de uma só vez.
+- 📥 **Exportação Excel no Navegador:**
+  - Gera planilhas `.xlsx` formatadas idênticas ao documento físico, com o brasão institucional embutido, processado 100% no cliente via `exceljs` (sem servidores intermediários).
+- 💾 **Auto-Save Inteligente no Cloud Firestore:**
+  - Persistência instantânea com debounce. Os itens da prescrição são armazenados diretamente no documento, reduzindo o tráfego a **1 única gravação por salvamento**.
+- 🔒 **Segurança & Privacidade:**
+  - Autenticação simples com senha para acesso rápido em computadores compartilhados de hospital.
+  - Regras de segurança no Firestore (`request.auth != null`), impedindo qualquer acesso não autorizado.
+  - Zero dependência de terceiros: hospedado e gerenciado integralmente no Google Cloud.
 
 ---
 
 ## 🛠️ Stack Tecnológica & Arquitetura
 
-O projeto foi construído seguindo princípios de *Clean Code* e separação de responsabilidades (Front-end vs API vs Banco de Dados):
+O projeto adota uma arquitetura Serverless estática e desacoplada, garantindo **custo R$ 0,00 perpétuo** no Plano Spark do Firebase e tempo de carregamento de milissegundos via CDN global:
 
-- **Core:** [Next.js](https://nextjs.org/) (App Router, React Server Components & API Routes)
+- **Frontend:** [Next.js](https://nextjs.org/) (App Router, Turbopack, Static Export com `output: 'export'`)
 - **Linguagem:** [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
 - **Design & UI:** [Tailwind CSS](https://tailwindcss.com/)
-- **ORM & Banco de Dados:** [Prisma ORM](https://www.prisma.io/) + [Turso](https://turso.tech/) (libSQL / SQLite Serverless na Edge)
-- **Segurança:** [jose](https://github.com/panva/jose) (JWT seguro) & [bcryptjs](https://github.com/dcodeIO/bcrypt.js) para hash de senhas
-- **Engenharia com IA:** O desenvolvimento desta base arquitetural utilizou *Agentic Workflows* avançados, coordenando IAs especialistas (Frontend, Backend, Database e Code Reviewer) para escalar a produtividade do código.
+- **Banco de Dados:** [Cloud Firestore](https://firebase.google.com/docs/firestore) (Google Cloud Platform)
+- **Autenticação:** [Firebase Authentication](https://firebase.google.com/docs/auth)
+- **Hospedagem & CDN:** [Firebase Hosting](https://firebase.google.com/docs/hosting) (com SSL/HTTPS gratuito e suporte a domínio personalizado)
+- **Planilhas:** [ExcelJS](https://github.com/exceljs/exceljs) (processamento de arquivos e imagens em Blob no cliente)
 
 ---
 
 ## 💻 Como Executar o Projeto Localmente
 
 ### Pré-requisitos
-- Node.js (versão 20 ou superior)
-- NPM ou Yarn
-- Conta no [Turso](https://turso.tech) (Plano Gratuito) para o banco de dados serverless.
+- [Node.js](https://nodejs.org/) (versão 20 ou superior)
+- NPM
+- Um projeto criado no [Firebase Console](https://console.firebase.google.com/) com Firestore e Authentication ativados.
 
 ### 1. Clonar o repositório
 ```bash
@@ -71,35 +82,52 @@ npm install
 ```
 
 ### 3. Configurar variáveis de ambiente
-Copie o arquivo de exemplo e preencha com as suas configurações:
+Copie o arquivo de exemplo:
 ```bash
 cp .env.example .env.local
 ```
 
-Abra o arquivo `.env.local` e preencha os campos obrigatórios:
-- `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN`: Suas credenciais do Turso.
-- `AUTH_PASSWORD_HASH`: Hash bcrypt da sua senha de acesso. *(Dica de geração: `node -e "console.log(require('bcryptjs').hashSync('SuaSenha', 10))"`)*
-- `AUTH_SECRET`: Chave secreta longa e aleatória para assinar os tokens JWT.
-- **Variáveis White-Label:** `INSTITUTION_NAME`, `INSTITUTION_SUBTITLE`, `INSTITUTION_LOGO_PATH` (Pode apontar para uma URL pública da sua logo).
-
-### 4. Inicializar o Banco e Executar Seeds (Modelos Base)
-Execute os scripts para popular o banco de dados com os templates clínicos iniciais:
-```bash
-npx prisma generate
-npx tsx prisma/seed.ts
+Preencha o `.env.local` com as chaves do seu aplicativo web no Firebase:
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY="sua-api-key"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="seu-projeto.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="seu-projeto"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="seu-projeto.firebasestorage.app"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="seu-sender-id"
+NEXT_PUBLIC_FIREBASE_APP_ID="seu-app-id"
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="G-XXXXXXXXXX"
+NEXT_PUBLIC_FIREBASE_DEFAULT_EMAIL="seu-email@dominio.com"
 ```
 
-### 5. Iniciar o servidor de desenvolvimento
+### 4. Iniciar o servidor de desenvolvimento
 ```bash
 npm run dev
 ```
-
-Abra [http://localhost:3000](http://localhost:3000) no seu navegador. 
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ---
 
-## 📸 Screenshots (Demonstração)
-*(Sugestão: Adicione aqui capturas de tela mostrando a interface de plantão, o painel de edição de prescrição e um PDF/Print do modelo final gerado)*
+## 🚀 Como Compilar e Fazer Deploy no Firebase Hosting
+
+O projeto é exportado como arquivos estáticos puros (`out/`):
+
+### 1. Gerar o build estático
+```bash
+npm run build
+```
+
+### 2. Publicar no Firebase Hosting
+Conecte o CLI ao seu usuário Google (caso ainda não esteja logado):
+```bash
+npx firebase-tools login
+```
+
+E publique a aplicação com um único comando:
+```bash
+npx firebase-tools deploy --only hosting
+```
+
+A aplicação estará online imediatamente em `https://<seu-projeto>.web.app` e no seu domínio próprio customizado.
 
 ---
 
