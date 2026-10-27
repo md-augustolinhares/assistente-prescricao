@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getTemplates, createPrescription } from '@/lib/firestore-service';
 
 interface TemplateOption {
   id: string;
   name: string;
   description: string | null;
-  items: Array<{ id: string }>;
+  items: Array<any>;
 }
 
 interface CreatePrescriptionModalProps {
@@ -35,8 +36,7 @@ export function CreatePrescriptionModal({
     async function loadTemplates() {
       try {
         setFetchingTemplates(true);
-        const res = await fetch('/api/templates');
-        const data = await res.json();
+        const data = await getTemplates();
         setTemplates(data);
         if (data.length > 0 && !selectedTemplateId) {
           // Seleciona o Geral por padrão
@@ -63,28 +63,16 @@ export function CreatePrescriptionModal({
     setError('');
 
     try {
-      const res = await fetch('/api/prescriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftId,
-          templateId: selectedTemplateId,
-          patientName: patientName.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao criar prescrição');
-        setLoading(false);
-        return;
-      }
-
-      const prescription = await res.json();
-      router.push(`/prescricao/${prescription.id}`);
+      const createdId = await createPrescription(
+        shiftId,
+        selectedTemplateId,
+        patientName.trim()
+      );
+      router.push(`/prescricao?id=${createdId}`);
       onClose();
-    } catch {
-      setError('Falha de conexão com o servidor.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao criar prescrição');
       setLoading(false);
     }
   }

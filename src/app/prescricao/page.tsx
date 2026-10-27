@@ -1,48 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { AutoSaveStatus } from '@/components/prescription/auto-save-status';
 import { CatalogModal, CatalogItemData } from '@/components/prescription/catalog-modal';
 import { renderItemDescription } from '@/lib/prescription-utils';
 import { CopyButton } from '@/components/prescription/copy-button';
-
-interface TemplateItemInfo {
-  id: string;
-  category: string;
-  isProtocol: boolean;
-  protocolDetail: string | null;
-  variants: string; // JSON string
-  isEditable: boolean;
-}
-
-interface ItemRow {
-  id?: string;
-  position: number;
-  description: string;
-  baseText?: string;
-  route?: string | null;
-  frequency?: string | null;
-  conditionText?: string | null;
-  scheduleType: string;
-  isEnabled: boolean;
-  isManual: boolean;
-  templateItemId?: string | null;
-  catalogItemId?: string | null;
-  templateItem?: TemplateItemInfo | null;
-}
-
-interface PrescriptionData {
-  id: string;
-  patientName: string;
-  prescriptionDate: string;
-  shiftId: string;
-  template: {
-    name: string;
-  };
-  items: ItemRow[];
-}
+import {
+  getPrescriptionById,
+  updatePrescriptionItems,
+  updatePatientName,
+  PrescriptionData,
+  PrescriptionItemRow,
+} from '@/lib/firestore-service';
+import { exportPrescriptionToExcel } from '@/lib/excel-export';
 
 const SCHEDULE_OPTIONS = [
   { label: 'Horário Fixo', value: 'HORARIO' },
@@ -51,14 +24,11 @@ const SCHEDULE_OPTIONS = [
   { label: 'Condicional', value: 'CONDICIONAL' },
 ];
 
-export default function PrescriptionEditorPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function PrescriptionEditorContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
   const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
-  const [items, setItems] = useState<ItemRow[]>([]);
+  const [items, setItems] = useState<PrescriptionItemRow[]>([]);
   const [patientName, setPatientName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -69,6 +39,7 @@ export default function PrescriptionEditorPage({
   const [manualText, setManualText] = useState('');
   const [manualSchedule, setManualSchedule] = useState('HORARIO');
   const [isAddingManual, setIsAddingManual] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   // Controle de auto-save inicial
   const isInitialMount = useRef(true);
@@ -77,11 +48,14 @@ export default function PrescriptionEditorPage({
   // 1. Carregar dados da prescrição
   useEffect(() => {
     async function loadPrescription() {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
-        const res = await fetch(`/api/prescriptions/${id}`);
-        if (!res.ok) return;
-        const data: PrescriptionData = await res.json();
+        const data = await getPrescriptionById(id);
+        if (!data) return;
         setPrescription(data);
         setPatientName(data.patientName);
         setItems(data.items);
@@ -102,6 +76,8 @@ export default function PrescriptionEditorPage({
       return;
     }
 
+    if (!id) return;
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -110,18 +86,10 @@ export default function PrescriptionEditorPage({
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/prescriptions/${id}/items`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items }),
-        });
-
-        if (res.ok) {
-          setSaveStatus('saved');
-        } else {
-          setSaveStatus('error');
-        }
-      } catch {
+        await updatePrescriptionItems(id, items);
+        setSaveStatus('saved');
+      } catch (err) {
+        console.error('Auto-save error:', err);
         setSaveStatus('error');
       }
     }, 800);
@@ -189,8 +157,8 @@ export default function PrescriptionEditorPage({
   }
 
   function handleSelectCatalogItem(catalogItem: CatalogItemData, insertAt: 'top' | 'bottom' = 'bottom') {
-    const newItem: ItemRow = {
-      position: 0, // will be mapped
+    const newItem: PrescriptionItemRow = {
+      position: 0,
       description: catalogItem.fullDescription,
       baseText: catalogItem.fullDescription,
       scheduleType: 'HORARIO',
@@ -209,7 +177,7 @@ export default function PrescriptionEditorPage({
     e.preventDefault();
     if (!manualText.trim()) return;
 
-    const newItem: ItemRow = {
+    const newItem: PrescriptionItemRow = {
       position: items.length + 1,
       description: manualText.toUpperCase().trim(),
       baseText: manualText.toUpperCase().trim(),
@@ -229,27 +197,34 @@ export default function PrescriptionEditorPage({
 
     try {
       setSavingName(true);
-      const res = await fetch(`/api/prescriptions/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: editedName.trim() }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setPatientName(updated.patientName);
-        setIsEditingName(false);
-      } else {
-        alert('Erro ao atualizar nome do paciente.');
-      }
-    } catch {
-      alert('Erro de conexão ao salvar nome.');
+      const cleanName = await updatePatientName(id, editedName.trim());
+      setPatientName(cleanName);
+      setIsEditingName(false);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao atualizar nome do paciente.');
     } finally {
       setSavingName(false);
     }
   }
 
-  // Contagem de numeração sequencial ativa para impressão
+  async function handleExportExcel() {
+    if (!prescription) return;
+    try {
+      setExportingExcel(true);
+      await exportPrescriptionToExcel({
+        ...prescription,
+        patientName,
+        items,
+      });
+    } catch (err) {
+      console.error('Erro ao exportar excel:', err);
+      alert('Falha ao exportar excel.');
+    } finally {
+      setExportingExcel(false);
+    }
+  }
+
   let activeCounter = 0;
 
   if (loading || !prescription) {
@@ -273,7 +248,7 @@ export default function PrescriptionEditorPage({
         {/* Navigation & Breadcrumb */}
         <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
           <Link
-            href={`/plantao/${prescription.shiftId}`}
+            href={`/plantao?id=${prescription.shiftId}`}
             className="hover:text-blue-600 transition flex items-center gap-1 font-medium"
           >
             &larr; Voltar para a lista do plantão
@@ -342,16 +317,17 @@ export default function PrescriptionEditorPage({
 
           <div className="flex items-center gap-2">
             <CopyButton items={items.filter(i => i.isEnabled)} />
-            <a
-              href={`/api/prescriptions/${prescription.id}/export`}
-              download
-              className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5"
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
             >
               <span>📥</span>
-              <span>Baixar Excel</span>
-            </a>
+              <span>{exportingExcel ? 'Gerando...' : 'Baixar Excel'}</span>
+            </button>
             <Link
-              href={`/prescricao/${prescription.id}/imprimir`}
+              href={`/prescricao/imprimir?id=${prescription.id}`}
               target="_blank"
               className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-1.5"
             >
@@ -380,7 +356,6 @@ export default function PrescriptionEditorPage({
             const isEnabled = item.isEnabled;
             const currentItemNumber = isEnabled ? ++activeCounter : null;
 
-            // Extrair variantes se disponíveis no templateItem
             let parsedVariants: string[] = [];
             if (item.templateItem?.variants) {
               try {
@@ -428,7 +403,6 @@ export default function PrescriptionEditorPage({
                           </span>
                         )}
 
-                        {/* Tag de categoria */}
                         {item.templateItem?.category && (
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                             {item.templateItem.category}
@@ -484,7 +458,7 @@ export default function PrescriptionEditorPage({
                       </div>
                     </div>
 
-                    {/* Descrição do Item (com input se for editável ou manual) */}
+                    {/* Descrição do Item */}
                     <div className="mt-1">
                       {item.templateItem?.isProtocol ? (
                         <div>
@@ -510,9 +484,8 @@ export default function PrescriptionEditorPage({
                       )}
                     </div>
 
-                    {/* Linha de Opções: Variantes pré-configuradas e Aprazamento */}
+                    {/* Linha de Opções */}
                     <div className="flex flex-wrap items-center gap-3 mt-3 pt-2.5 border-t border-slate-100/80 text-xs">
-                      {/* Seletor de Aprazamento */}
                       <div className="flex items-center gap-1.5">
                         <span className="text-slate-400 font-medium">Tipo:</span>
                         <select
@@ -531,7 +504,6 @@ export default function PrescriptionEditorPage({
                         </select>
                       </div>
 
-                      {/* Dropdown de Variantes Rápidas (caso existam) */}
                       {parsedVariants.length > 0 && isEnabled && (
                         <div className="flex items-center gap-1.5">
                           <span className="text-slate-400 font-medium">
@@ -671,13 +643,13 @@ export default function PrescriptionEditorPage({
 
           <div className="flex items-center gap-3">
             <Link
-              href={`/plantao/${prescription.shiftId}`}
+              href={`/plantao?id=${prescription.shiftId}`}
               className="text-xs font-medium text-slate-600 hover:bg-slate-100 px-3.5 py-2 rounded-xl transition"
             >
               Voltar ao Plantão
             </Link>
             <Link
-              href={`/prescricao/${prescription.id}/imprimir`}
+              href={`/prescricao/imprimir?id=${prescription.id}`}
               target="_blank"
               className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-1.5"
             >
@@ -695,5 +667,13 @@ export default function PrescriptionEditorPage({
         onSelectItem={handleSelectCatalogItem}
       />
     </div>
+  );
+}
+
+export default function PrescriptionEditorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">Carregando editor...</div>}>
+      <PrescriptionEditorContent />
+    </Suspense>
   );
 }

@@ -1,16 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout } = useAuth();
 
   async function handleLogout() {
-    await fetch('/api/auth', { method: 'DELETE' });
-    router.push('/login');
-    router.refresh();
+    await logout();
   }
 
   return (

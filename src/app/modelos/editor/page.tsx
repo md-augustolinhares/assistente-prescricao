@@ -1,31 +1,16 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { renderItemDescription } from '@/lib/prescription-utils';
-
-interface TemplateItemDetail {
-  id: string;
-  position: number;
-  description: string;
-  baseText: string;
-  route: string | null;
-  frequency: string | null;
-  conditionText: string | null;
-  category: string;
-  defaultScheduleType: string;
-  isProtocol: boolean;
-  protocolDetail: string | null;
-  variants: string;
-}
-
-interface TemplateData {
-  id: string;
-  name: string;
-  description: string | null;
-  items: TemplateItemDetail[];
-}
+import {
+  getTemplateById,
+  updateTemplateItems,
+  TemplateData,
+  TemplateItem,
+} from '@/lib/firestore-service';
 
 const SCHEDULE_OPTIONS = [
   { label: 'Horário Fixo', value: 'HORARIO' },
@@ -43,17 +28,14 @@ const CATEGORY_OPTIONS = [
   { label: 'Condicional', value: 'CONDICIONAL' },
 ];
 
-export default function TemplateEditorPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function TemplateEditorContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
   const [template, setTemplate] = useState<TemplateData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Modal de edição de item
-  const [editingItem, setEditingItem] = useState<TemplateItemDetail | null>(null);
+  const [editingItem, setEditingItem] = useState<TemplateItem | null>(null);
   const [baseText, setBaseText] = useState('');
   const [route, setRoute] = useState('');
   const [frequency, setFrequency] = useState('');
@@ -67,11 +49,14 @@ export default function TemplateEditorPage({
   const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   async function loadTemplate(showLoading = true) {
+    if (!id) {
+      if (showLoading) setLoading(false);
+      return;
+    }
     try {
       if (showLoading) setLoading(true);
-      const res = await fetch(`/api/templates/${id}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await getTemplateById(id);
+      if (!data) return;
       setTemplate(data);
     } catch (err) {
       console.error(err);
@@ -81,18 +66,25 @@ export default function TemplateEditorPage({
   }
 
   async function handleReorder(itemId: string, direction: 'up' | 'down') {
+    if (!template || !id) return;
     try {
       setReorderingId(itemId);
-      const res = await fetch(`/api/templates/${id}/items/${itemId}/reorder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction }),
-      });
-      if (res.ok) {
-        await loadTemplate(false);
-      }
+      const currentItems = [...template.items];
+      const index = currentItems.findIndex((it) => it.id === itemId);
+      if (index === -1) return;
+
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= currentItems.length) return;
+
+      const [moved] = currentItems.splice(index, 1);
+      currentItems.splice(targetIndex, 0, moved);
+
+      // Re-mapear posições 1..N
+      const remapped = currentItems.map((it, idx) => ({ ...it, position: idx + 1 }));
+      await updateTemplateItems(id, remapped);
+      await loadTemplate(false);
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao reordenar:', err);
     } finally {
       setReorderingId(null);
     }
@@ -102,7 +94,7 @@ export default function TemplateEditorPage({
     loadTemplate();
   }, [id]);
 
-  function openEditModal(item: TemplateItemDetail) {
+  function openEditModal(item: TemplateItem) {
     setEditingItem(item);
     setBaseText(item.baseText || item.description);
     setRoute(item.route || '');
@@ -141,7 +133,6 @@ export default function TemplateEditorPage({
     setVariantsList(variantsList.filter(item => item !== v));
   }
 
-  // Preview dinâmico do texto gerado
   const previewDescription = renderItemDescription({
     baseText,
     route,
@@ -152,7 +143,7 @@ export default function TemplateEditorPage({
 
   async function handleSaveItem(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingItem) return;
+    if (!editingItem || !template || !id) return;
     if (!baseText.trim()) {
       setError('Informe o medicamento e dose/diluição');
       return;
@@ -162,31 +153,37 @@ export default function TemplateEditorPage({
     setError('');
 
     try {
-      const res = await fetch(`/api/templates/${id}/items/${editingItem.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baseText: baseText.trim(),
-          route: route.trim(),
-          frequency: frequency.trim(),
-          conditionText: conditionText.trim(),
-          defaultScheduleType,
-          category,
-          variants: variantsList,
-        }),
+      const newDesc = renderItemDescription({
+        baseText: baseText.trim(),
+        route: route.trim(),
+        frequency: frequency.trim(),
+        scheduleType: defaultScheduleType,
+        conditionText: conditionText.trim(),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao atualizar item');
-        setSaving(false);
-        return;
-      }
+      const updatedItems = template.items.map((it) => {
+        if (it.id === editingItem.id) {
+          return {
+            ...it,
+            baseText: baseText.trim(),
+            route: route.trim(),
+            frequency: frequency.trim(),
+            conditionText: conditionText.trim(),
+            defaultScheduleType,
+            category,
+            variants: JSON.stringify(variantsList),
+            description: newDesc,
+          };
+        }
+        return it;
+      });
 
+      await updateTemplateItems(id, updatedItems);
       closeEditModal();
       await loadTemplate();
-    } catch {
-      setError('Falha na comunicação com o servidor');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Falha na comunicação com o servidor');
     } finally {
       setSaving(false);
     }
@@ -271,7 +268,6 @@ export default function TemplateEditorPage({
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-center">
-                  {/* Botões de Reordenação */}
                   <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                     <button
                       type="button"
@@ -314,7 +310,7 @@ export default function TemplateEditorPage({
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded">
                   Item #{editingItem.position} do Modelo
                 </span>
                 <h2 className="text-lg font-bold text-slate-800 mt-1">
@@ -330,7 +326,6 @@ export default function TemplateEditorPage({
             </div>
 
             <form onSubmit={handleSaveItem} className="space-y-4">
-              {/* Bloco 1: Medicamento + Dose / Diluição */}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Medicamento + Dose / Diluição
@@ -346,7 +341,6 @@ export default function TemplateEditorPage({
                 />
               </div>
 
-              {/* Bloco 2: Via e Frequência */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
@@ -375,7 +369,6 @@ export default function TemplateEditorPage({
                 </div>
               </div>
 
-              {/* Bloco 3: Condição Específica */}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Condição Específica (caso seja condicional)
@@ -389,7 +382,6 @@ export default function TemplateEditorPage({
                 />
               </div>
 
-              {/* Bloco 4: Tipo de Aprazamento e Categoria */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
@@ -426,7 +418,6 @@ export default function TemplateEditorPage({
                 </div>
               </div>
 
-              {/* Bloco 5: Variações (Apresentações alternativas) */}
               <div className="border-t border-slate-100 pt-3 mt-3">
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
                   Apresentações Alternativas (Variações)
@@ -474,7 +465,6 @@ export default function TemplateEditorPage({
                 )}
               </div>
 
-              {/* Live Preview */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                   Texto que sairá impresso:
@@ -490,7 +480,6 @@ export default function TemplateEditorPage({
                 </div>
               )}
 
-              {/* Botões */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -512,5 +501,13 @@ export default function TemplateEditorPage({
         </div>
       )}
     </div>
+  );
+}
+
+export default function TemplateEditorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">Carregando itens do modelo...</div>}>
+      <TemplateEditorContent />
+    </Suspense>
   );
 }

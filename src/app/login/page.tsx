@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,24 +16,9 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Senha incorreta. Tente novamente.');
-        setLoading(false);
-        return;
-      }
-
-      router.push('/');
-      router.refresh();
-    } catch {
-      setError('Falha na comunicação com o servidor.');
+    const res = await login(password);
+    if (!res.success) {
+      setError(res.error || 'Senha incorreta. Tente novamente.');
       setLoading(false);
     }
   }

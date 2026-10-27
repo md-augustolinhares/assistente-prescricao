@@ -1,37 +1,25 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { CreatePrescriptionModal } from '@/components/shift/create-prescription-modal';
 import { EditShiftModal } from '@/components/shift/edit-shift-modal';
+import {
+  getShiftById,
+  deletePrescription,
+  duplicatePrescription,
+  updatePatientName,
+  getPrescriptionById,
+  ShiftDetail,
+  PrescriptionData,
+} from '@/lib/firestore-service';
+import { exportShiftToExcel } from '@/lib/excel-export';
 
-interface PrescriptionSummary {
-  id: string;
-  patientName: string;
-  position: number;
-  template: {
-    name: string;
-  };
-  _count: {
-    items: number;
-  };
-}
-
-interface ShiftDetail {
-  id: string;
-  shiftDate: string;
-  notes: string | null;
-  prescriptions: PrescriptionSummary[];
-}
-
-export default function ShiftPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function ShiftPageContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
   const router = useRouter();
   const [shift, setShift] = useState<ShiftDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,16 +29,20 @@ export default function ShiftPage({
   const [renamingPatient, setRenamingPatient] = useState<{ id: string; name: string } | null>(null);
   const [newPatientName, setNewPatientName] = useState('');
   const [renamingLoading, setRenamingLoading] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   async function loadShift() {
+    if (!id) {
+      router.push('/');
+      return;
+    }
     try {
       setLoading(true);
-      const res = await fetch(`/api/shifts/${id}`);
-      if (!res.ok) {
+      const data = await getShiftById(id);
+      if (!data) {
         router.push('/');
         return;
       }
-      const data = await res.json();
       setShift(data);
     } catch (err) {
       console.error(err);
@@ -68,12 +60,8 @@ export default function ShiftPage({
 
     try {
       setDeletingId(prescriptionId);
-      const res = await fetch(`/api/prescriptions/${prescriptionId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        await loadShift();
-      }
+      await deletePrescription(prescriptionId);
+      await loadShift();
     } catch (err) {
       console.error(err);
     } finally {
@@ -86,17 +74,11 @@ export default function ShiftPage({
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/prescriptions/${prescriptionId}/duplicate`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        await loadShift();
-      } else {
-        alert('Erro ao duplicar prescrição.');
-        setLoading(false);
-      }
+      await duplicatePrescription(prescriptionId);
+      await loadShift();
     } catch (err) {
       console.error(err);
+      alert('Erro ao duplicar prescrição.');
       setLoading(false);
     }
   }
@@ -107,23 +89,32 @@ export default function ShiftPage({
 
     try {
       setRenamingLoading(true);
-      const res = await fetch(`/api/prescriptions/${renamingPatient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: newPatientName.trim() }),
-      });
-
-      if (res.ok) {
-        setRenamingPatient(null);
-        await loadShift();
-      } else {
-        alert('Erro ao renomear paciente.');
-      }
+      await updatePatientName(renamingPatient.id, newPatientName.trim());
+      setRenamingPatient(null);
+      await loadShift();
     } catch (err) {
       console.error(err);
       alert('Erro ao renomear paciente.');
     } finally {
       setRenamingLoading(false);
+    }
+  }
+
+  async function handleExportExcel() {
+    if (!shift || shift.prescriptions.length === 0) return;
+    try {
+      setExportingExcel(true);
+      const fullPrescriptions: PrescriptionData[] = [];
+      for (const p of shift.prescriptions) {
+        const full = await getPrescriptionById(p.id);
+        if (full) fullPrescriptions.push(full);
+      }
+      await exportShiftToExcel(shift, fullPrescriptions);
+    } catch (err) {
+      console.error('Erro ao exportar excel:', err);
+      alert('Falha ao exportar excel do plantão.');
+    } finally {
+      setExportingExcel(false);
     }
   }
 
@@ -188,16 +179,17 @@ export default function ShiftPage({
           <div className="flex flex-col sm:flex-row items-center gap-3">
             {shift.prescriptions.length > 0 && (
               <>
-                <a
-                  href={`/api/shifts/${shift.id}/export`}
-                  download
-                  className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  disabled={exportingExcel}
+                  className="bg-white border border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <span>📥</span>
-                  <span>Baixar Excel</span>
-                </a>
+                  <span>{exportingExcel ? 'Gerando Planilha...' : 'Baixar Excel'}</span>
+                </button>
                 <Link
-                  href={`/plantao/${shift.id}/imprimir`}
+                  href={`/plantao/imprimir?id=${shift.id}`}
                   target="_blank"
                   className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
                 >
@@ -311,7 +303,7 @@ export default function ShiftPage({
 
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/prescricao/${p.id}/imprimir`}
+                        href={`/prescricao/imprimir?id=${p.id}`}
                         target="_blank"
                         className="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
                       >
@@ -319,7 +311,7 @@ export default function ShiftPage({
                         <span>Imprimir</span>
                       </Link>
                       <Link
-                        href={`/prescricao/${p.id}`}
+                        href={`/prescricao?id=${p.id}`}
                         className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg shadow-sm shadow-blue-600/20 transition"
                       >
                         Editar &rarr;
@@ -409,5 +401,13 @@ export default function ShiftPage({
         </div>
       )}
     </div>
+  );
+}
+
+export default function ShiftPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">Carregando...</div>}>
+      <ShiftPageContent />
+    </Suspense>
   );
 }

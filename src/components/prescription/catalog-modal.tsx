@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getCatalogItems } from '@/lib/firestore-service';
 
 export interface CatalogItemData {
   id: string;
   name: string;
   fullDescription: string;
   category: string;
-  variants?: string;
+  variants?: string | null;
 }
 
 interface CatalogModalProps {
@@ -42,8 +43,7 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
     async function loadCatalog() {
       try {
         setLoading(true);
-        const res = await fetch('/api/catalog');
-        const data = await res.json();
+        const data = await getCatalogItems();
         setItems(data);
       } catch (err) {
         console.error('Erro ao carregar catálogo:', err);

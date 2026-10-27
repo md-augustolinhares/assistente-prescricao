@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createShift } from '@/lib/firestore-service';
 
 interface CreateShiftModalProps {
   isOpen: boolean;
@@ -27,29 +28,12 @@ export function CreateShiftModal({ isOpen, onClose }: CreateShiftModalProps) {
     setError('');
 
     try {
-      const res = await fetch('/api/shifts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Enviar com timezone para não haver deslocamento de dia
-          shiftDate: new Date(`${shiftDate}T12:00:00Z`).toISOString(),
-          notes: notes.trim() || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao criar plantão');
-        setLoading(false);
-        return;
-      }
-
-      const created = await res.json();
-      router.push(`/plantao/${created.id}`);
-      router.refresh();
+      const createdId = await createShift(shiftDate, notes);
+      router.push(`/plantao?id=${createdId}`);
       onClose();
-    } catch {
-      setError('Falha de conexão com o servidor.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao criar plantão');
       setLoading(false);
     }
   }

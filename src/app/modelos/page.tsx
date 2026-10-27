@@ -3,23 +3,16 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-
-interface TemplateSummary {
-  id: string;
-  name: string;
-  description: string | null;
-  items: Array<{ id: string }>;
-}
+import { getTemplates, TemplateData } from '@/lib/firestore-service';
 
 export default function TemplatesListPage() {
-  const [templates, setTemplates] = useState<TemplateSummary[]>([]);
+  const [templates, setTemplates] = useState<TemplateData[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function loadTemplates() {
     try {
       setLoading(true);
-      const res = await fetch('/api/templates');
-      const data = await res.json();
+      const data = await getTemplates();
       setTemplates(data);
     } catch (err) {
       console.error(err);
@@ -76,7 +69,7 @@ export default function TemplatesListPage() {
 
                 <div className="mt-6 pt-3 border-t border-slate-100">
                   <Link
-                    href={`/modelos/${tpl.id}`}
+                    href={`/modelos/editor?id=${tpl.id}`}
                     className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs rounded-xl shadow-sm shadow-blue-600/20 transition flex items-center justify-center gap-1.5"
                   >
                     <span>✏️</span>

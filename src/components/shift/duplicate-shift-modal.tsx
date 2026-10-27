@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { duplicateShift } from '@/lib/firestore-service';
 
 interface DuplicateShiftModalProps {
   isOpen: boolean;
@@ -23,34 +24,19 @@ export function DuplicateShiftModal({ isOpen, shiftId, shiftDateStr, onClose, on
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newDate) return;
+    if (!newDate || !shiftId) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`/api/shifts/${shiftId}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newDate: newDate,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao duplicar plantão');
-        setLoading(false);
-        return;
-      }
-
-      const created = await res.json();
-      router.push(`/plantao/${created.id}`);
-      router.refresh();
+      const createdId = await duplicateShift(shiftId, newDate);
+      router.push(`/plantao?id=${createdId}`);
       onSuccess();
       onClose();
-    } catch {
-      setError('Falha de conexão com o servidor.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao duplicar plantão');
       setLoading(false);
     }
   }

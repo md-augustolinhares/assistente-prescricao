@@ -1,41 +1,67 @@
-import { prisma } from '@/lib/prisma';
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { PrintButton } from '@/components/prescription/print-button';
+import { getPrescriptionById, PrescriptionData } from '@/lib/firestore-service';
 
-export const dynamic = 'force-dynamic';
+function PrintPrescriptionContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
+  const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function PrintPrescriptionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+  useEffect(() => {
+    async function load() {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const data = await getPrescriptionById(id);
+        setPrescription(data);
+      } catch (err) {
+        console.error('Erro ao carregar prescrição:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
 
-  const prescription = await prisma.prescription.findUnique({
-    where: { id },
-    include: {
-      template: true,
-      items: {
-        where: { isEnabled: true },
-        orderBy: { position: 'asc' },
-        include: {
-          templateItem: true,
-        },
-      },
-    },
-  });
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Carregando folha para impressão...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!prescription) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 text-center max-w-sm">
+          <h2 className="text-lg font-bold text-slate-800 mb-2">Prescrição não encontrada</h2>
+          <p className="text-sm text-slate-500 mb-4">A prescrição solicitada não existe ou foi removida.</p>
+          <Link
+            href="/"
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+          >
+            &larr; Voltar ao Início
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const institutionName =
-    process.env.INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
-  const institutionSubtitle =
-    process.env.INSTITUTION_SUBTITLE || 'PRONTO ATENDIMENTO';
+    process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
   const logoPath =
-    process.env.INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
+    process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
   const formattedDate = new Date(prescription.prescriptionDate).toLocaleDateString(
     'pt-BR',
@@ -46,17 +72,22 @@ export default async function PrintPrescriptionPage({
     }
   );
 
-  // Meta de linhas na folha A4 em modo paisagem para preencher com linhas em branco
+  const enabledItems = prescription.items
+    ? prescription.items
+        .filter((it) => it.isEnabled)
+        .sort((a, b) => a.position - b.position)
+    : [];
+
   const TOTAL_ROWS = 20;
-  const emptyRowsCount = Math.max(0, TOTAL_ROWS - prescription.items.length);
+  const emptyRowsCount = Math.max(0, TOTAL_ROWS - enabledItems.length);
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 print:p-0 print:bg-white text-black font-sans antialiased">
-      {/* Barra superior de ações (apenas na tela) */}
+      {/* Barra superior de ações */}
       <div className="max-w-[280mm] mx-auto mb-4 flex items-center justify-between no-print bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">
           <Link
-            href={`/prescricao/${prescription.id}`}
+            href={`/prescricao?id=${prescription.id}`}
             className="text-xs font-semibold text-slate-600 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition"
           >
             &larr; Voltar ao Editor
@@ -73,7 +104,6 @@ export default async function PrintPrescriptionPage({
       <div className="max-w-[297mm] mx-auto bg-white p-4 print:p-0 shadow-sm print:shadow-none min-h-[210mm] text-black">
         <table className="w-full border-collapse border-2 border-black text-[10pt]">
           <thead>
-            {/* Linha do Logo e Título */}
             <tr>
               <th colSpan={2} className="relative text-center h-24 border-b-2 border-black">
                 <img
@@ -85,7 +115,6 @@ export default async function PrintPrescriptionPage({
               </th>
             </tr>
             
-            {/* Linha: Prescrição e Data */}
             <tr className="h-8">
               <th className="w-[65%] text-center font-bold text-[12pt] border-r-2 border-b border-black">
                 PRESCRIÇÃO MÉDICA
@@ -95,7 +124,6 @@ export default async function PrintPrescriptionPage({
               </th>
             </tr>
             
-            {/* Linha: Nome e Horário da Medicação */}
             <tr className="h-8">
               <th className="w-[65%] text-left font-bold text-[11pt] border-r-2 border-b-2 border-black pl-1">
                 NOME: <span className="uppercase">{prescription.patientName}</span>
@@ -107,14 +135,8 @@ export default async function PrintPrescriptionPage({
           </thead>
           
           <tbody>
-            {/* Itens da Prescrição */}
-            {prescription.items.map((item, index) => {
+            {enabledItems.map((item, index) => {
               const isProtocol = item.templateItem?.isProtocol;
-              const hasCondition = !!item.conditionText || item.scheduleType === 'ACM' || item.scheduleType === 'SN';
-              
-              // We need to bold the condition part if possible.
-              // item.description already contains the full text. We can bold the condition/schedule type part if we do some splitting or just use the modular fields!
-              // Since we have modular fields: baseText, route, frequency, conditionText, scheduleType
               
               let boldPart = '';
               let normalPart = '';
@@ -127,7 +149,6 @@ export default async function PrintPrescriptionPage({
                 boldPart = item.conditionText;
               }
 
-              // Since the description is already assembled, we can just split it if it ends with the boldPart
               let finalDesc = item.description;
               let renderedBold = '';
               
@@ -139,27 +160,20 @@ export default async function PrintPrescriptionPage({
               }
 
               return (
-                <>
-                  <tr key={item.id} className="h-[22px]">
-                    <td className="w-[65%] border-r-2 border-b border-black pl-1 font-semibold uppercase">
-                      {index + 1}- {normalPart} <span className="font-bold">{renderedBold}</span>
-                    </td>
-                    <td className="w-[35%] border-b border-black"></td>
-                  </tr>
-                  {/* Protocolo Escalonado */}
-                  {isProtocol && item.templateItem?.protocolDetail && (
-                    <tr key={`${item.id}-protocol`} className="h-[22px]">
-                      <td className="w-[65%] border-r-2 border-b border-black text-center text-[9pt] px-2">
+                <tr key={item.id || index} className="h-[22px]">
+                  <td className="w-[65%] border-r-2 border-b border-black pl-1 font-semibold uppercase">
+                    {index + 1}- {normalPart} <span className="font-bold">{renderedBold}</span>
+                    {isProtocol && item.templateItem?.protocolDetail && (
+                      <div className="text-center text-[9pt] font-normal mt-0.5">
                         {item.templateItem.protocolDetail}
-                      </td>
-                      <td className="w-[35%] border-b border-black"></td>
-                    </tr>
-                  )}
-                </>
+                      </div>
+                    )}
+                  </td>
+                  <td className="w-[35%] border-b border-black"></td>
+                </tr>
               );
             })}
 
-            {/* Linhas vazias */}
             {Array.from({ length: emptyRowsCount }).map((_, emptyIdx) => (
               <tr key={`empty-${emptyIdx}`} className="h-[22px]">
                 <td className="w-[65%] border-r-2 border-b border-black"></td>
@@ -167,7 +181,6 @@ export default async function PrintPrescriptionPage({
               </tr>
             ))}
             
-            {/* Linha final da assinatura */}
             <tr className="h-12 border-t-2 border-black">
               <td colSpan={2} className="align-top font-bold pl-1 pt-1 border-none">
                 Assinatura e carimbo:
@@ -177,7 +190,6 @@ export default async function PrintPrescriptionPage({
         </table>
       </div>
 
-      {/* Regras CSS para Impressão */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -200,5 +212,13 @@ export default async function PrintPrescriptionPage({
         }}
       />
     </div>
+  );
+}
+
+export default function PrintPrescriptionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 text-slate-500">Carregando...</div>}>
+      <PrintPrescriptionContent />
+    </Suspense>
   );
 }

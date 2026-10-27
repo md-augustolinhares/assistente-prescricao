@@ -6,28 +6,7 @@ import { Header } from '@/components/layout/header';
 import { CreateShiftModal } from '@/components/shift/create-shift-modal';
 import { DuplicateShiftModal } from '@/components/shift/duplicate-shift-modal';
 import { EditShiftModal } from '@/components/shift/edit-shift-modal';
-
-interface TemplateItem {
-  id: string;
-  position: number;
-  description: string;
-}
-
-interface TemplateData {
-  id: string;
-  name: string;
-  description: string | null;
-  items: TemplateItem[];
-}
-
-interface ShiftData {
-  id: string;
-  shiftDate: string;
-  notes: string | null;
-  _count: {
-    prescriptions: number;
-  };
-}
+import { getShifts, getTemplates, deleteShift, ShiftData, TemplateData } from '@/lib/firestore-service';
 
 export default function HomePage() {
   const [shifts, setShifts] = useState<ShiftData[]>([]);
@@ -40,19 +19,12 @@ export default function HomePage() {
   async function loadData() {
     try {
       setLoading(true);
-      const [shiftsRes, templatesRes] = await Promise.all([
-        fetch('/api/shifts'),
-        fetch('/api/templates'),
+      const [shiftsData, templatesData] = await Promise.all([
+        getShifts(),
+        getTemplates(),
       ]);
-
-      if (shiftsRes.ok) {
-        const shiftsData = await shiftsRes.json();
-        setShifts(shiftsData);
-      }
-      if (templatesRes.ok) {
-        const templatesData = await templatesRes.json();
-        setTemplates(templatesData);
-      }
+      setShifts(shiftsData);
+      setTemplates(templatesData);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
     } finally {
@@ -68,12 +40,10 @@ export default function HomePage() {
     if (!confirm(`Deseja excluir o plantão de ${dateStr} e todas as suas prescrições?`)) return;
 
     try {
-      const res = await fetch(`/api/shifts/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        await loadData();
-      }
+      await deleteShift(id);
+      await loadData();
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao excluir plantão:', err);
     }
   }
 
@@ -188,7 +158,7 @@ export default function HomePage() {
                         {shift._count.prescriptions} paciente(s)
                       </span>
                       <Link
-                        href={`/plantao/${shift.id}`}
+                        href={`/plantao?id=${shift.id}`}
                         className="font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <span>Entrar</span>

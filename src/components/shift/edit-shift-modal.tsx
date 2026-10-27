@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { updateShift } from '@/lib/firestore-service';
 
 interface EditShiftModalProps {
   isOpen: boolean;
@@ -41,33 +42,23 @@ export function EditShiftModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!shiftDate) return;
+    if (!shiftDate || !shiftId) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`/api/shifts/${shiftId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftDate,
-          notes: notes.trim() || null,
-        }),
+      await updateShift(shiftId, {
+        shiftDate,
+        notes: notes.trim() || null,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao atualizar plantão');
-        setLoading(false);
-        return;
-      }
 
       setLoading(false);
       onSuccess();
       onClose();
-    } catch {
-      setError('Falha de conexão com o servidor.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Falha ao atualizar plantão.');
       setLoading(false);
     }
   }

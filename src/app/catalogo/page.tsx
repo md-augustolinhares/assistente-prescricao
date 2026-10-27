@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/header';
-
-interface CatalogItem {
-  id: string;
-  name: string;
-  fullDescription: string;
-  category: string;
-  variants?: string;
-}
+import {
+  getCatalogItems,
+  createCatalogItem,
+  updateCatalogItem,
+  deleteCatalogItem,
+  CatalogItemData,
+} from '@/lib/firestore-service';
 
 const CATEGORIES = [
   { label: 'Todos', value: 'ALL' },
@@ -24,7 +23,7 @@ const CATEGORIES = [
 ];
 
 export default function CatalogPage() {
-  const [items, setItems] = useState<CatalogItem[]>([]);
+  const [items, setItems] = useState<CatalogItemData[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [loading, setLoading] = useState(true);
@@ -42,8 +41,7 @@ export default function CatalogPage() {
   async function loadItems() {
     try {
       setLoading(true);
-      const res = await fetch('/api/catalog');
-      const data = await res.json();
+      const data = await getCatalogItems();
       setItems(data);
     } catch (err) {
       console.error(err);
@@ -66,7 +64,7 @@ export default function CatalogPage() {
     setIsModalOpen(true);
   }
 
-  function openEditModal(item: CatalogItem) {
+  function openEditModal(item: CatalogItemData) {
     setEditingId(item.id);
     setName(item.name);
     setFullDescription(item.fullDescription);
@@ -74,8 +72,6 @@ export default function CatalogPage() {
     
     // Parse variants for text area
     const parsedVariants = item.variants ? JSON.parse(item.variants) : [];
-    // Remove the primary description from the variants text box to avoid confusion, 
-    // or just show all of them. The easiest is to show all of them, so the user can edit any.
     setVariantsText(parsedVariants.join('\n'));
     
     setError('');
@@ -90,42 +86,37 @@ export default function CatalogPage() {
     setError('');
 
     try {
-      const url = editingId ? `/api/catalog/${editingId}` : '/api/catalog';
-      const method = editingId ? 'PUT' : 'POST';
-
       // Build variants JSON
       const variantsArray = variantsText
         .split('\n')
         .map(v => v.trim())
         .filter(Boolean);
         
-      // Ensure the fullDescription is inside the variants if we are using them
       if (variantsArray.length > 0 && !variantsArray.includes(fullDescription.trim())) {
         variantsArray.unshift(fullDescription.trim());
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (editingId) {
+        await updateCatalogItem(editingId, {
           name: name.trim(),
-          fullDescription: fullDescription.trim(), // removed force toUpperCase to let user decide
+          fullDescription: fullDescription.trim(),
           category,
           variants: JSON.stringify(variantsArray),
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Erro ao salvar item');
-        setSubmitting(false);
-        return;
+        });
+      } else {
+        await createCatalogItem({
+          name: name.trim(),
+          fullDescription: fullDescription.trim(),
+          category,
+          variants: JSON.stringify(variantsArray),
+        });
       }
 
       setIsModalOpen(false);
       await loadItems();
-    } catch {
-      setError('Falha de conexão com o servidor');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Falha ao salvar item');
     } finally {
       setSubmitting(false);
     }
@@ -135,7 +126,7 @@ export default function CatalogPage() {
     if (!confirm(`Deseja remover "${itemName}" do catálogo?`)) return;
 
     try {
-      await fetch(`/api/catalog/${id}`, { method: 'DELETE' });
+      await deleteCatalogItem(id);
       await loadItems();
     } catch (err) {
       console.error(err);
