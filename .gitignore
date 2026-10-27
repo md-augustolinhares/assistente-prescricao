@@ -9,6 +9,7 @@ node_modules/
 out/
 build/
 dist/
+.firebase/
 
 # === Variáveis de Ambiente e Segredos ===
 .env
