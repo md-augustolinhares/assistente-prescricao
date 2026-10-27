@@ -90,7 +90,7 @@ export async function exportShiftToExcel(
 
   for (let idx = 0; idx < fullPrescriptions.length; idx++) {
     const p = fullPrescriptions[idx];
-    let baseName = p.patientName.replace(/[\\/?*[\]]/g, '').substring(0, 25) || `Paciente_${idx + 1}`;
+    const baseName = p.patientName.replace(/[\\/?*[\]]/g, '').substring(0, 25) || `Paciente_${idx + 1}`;
     let sheetName = baseName;
     let counter = 1;
     while (usedSheetNames.has(sheetName)) {

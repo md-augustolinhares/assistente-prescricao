@@ -218,7 +218,7 @@ export async function updateShift(
   params: { shiftDate?: string; notes?: string | null; institutionId?: string | null }
 ): Promise<void> {
   const shiftRef = doc(db, 'shifts', id);
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, unknown> = {};
 
   if (params.institutionId !== undefined) {
     updateData.institutionId = params.institutionId || null;
@@ -497,7 +497,7 @@ export async function getTemplateById(id: string): Promise<TemplateData | null> 
     id: snap.id,
     name: data.name,
     description: data.description || null,
-    items: (data.items || []).sort((a: any, b: any) => a.position - b.position),
+    items: (data.items || []).sort((a: TemplateItem, b: TemplateItem) => a.position - b.position),
   };
 }
 
