@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { updateShift } from '@/lib/firestore-service';
+import { updateShift, getInstitutions, Institution } from '@/lib/firestore-service';
 
 interface EditShiftModalProps {
   isOpen: boolean;
   shiftId: string | null;
   currentDate: string | null;
   currentNotes: string | null;
+  currentInstitutionId?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -17,26 +18,42 @@ export function EditShiftModal({
   shiftId,
   currentDate,
   currentNotes,
+  currentInstitutionId,
   onClose,
   onSuccess,
 }: EditShiftModalProps) {
   const [shiftDate, setShiftDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [selectedInstId, setSelectedInstId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen && currentDate) {
-      try {
-        const formatted = new Date(currentDate).toISOString().split('T')[0];
-        setShiftDate(formatted);
-      } catch {
-        setShiftDate(new Date().toISOString().split('T')[0]);
+    if (isOpen) {
+      async function load() {
+        try {
+          const list = await getInstitutions();
+          setInstitutions(list);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      load();
+
+      if (currentDate) {
+        try {
+          const formatted = new Date(currentDate).toISOString().split('T')[0];
+          setShiftDate(formatted);
+        } catch {
+          setShiftDate(new Date().toISOString().split('T')[0]);
+        }
       }
       setNotes(currentNotes || '');
+      setSelectedInstId(currentInstitutionId || '');
       setError('');
     }
-  }, [isOpen, currentDate, currentNotes]);
+  }, [isOpen, currentDate, currentNotes, currentInstitutionId]);
 
   if (!isOpen || !shiftId) return null;
 
@@ -51,6 +68,7 @@ export function EditShiftModal({
       await updateShift(shiftId, {
         shiftDate,
         notes: notes.trim() || null,
+        institutionId: selectedInstId || null,
       });
 
       setLoading(false);
@@ -96,6 +114,30 @@ export function EditShiftModal({
               required
             />
           </div>
+
+          {institutions.length > 0 && (
+            <div>
+              <label
+                htmlFor="editShiftInstitution"
+                className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1"
+              >
+                Instituição do Plantão
+              </label>
+              <select
+                id="editShiftInstitution"
+                value={selectedInstId}
+                onChange={(e) => setSelectedInstId(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-800 text-xs font-bold uppercase bg-white"
+              >
+                <option value="">Usar Instituição Padrão / Ativa</option>
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name} {inst.isDefault ? '(Padrão)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label

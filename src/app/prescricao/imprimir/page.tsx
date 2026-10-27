@@ -4,12 +4,18 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { PrintButton } from '@/components/prescription/print-button';
-import { getPrescriptionById, PrescriptionData } from '@/lib/firestore-service';
+import {
+  getPrescriptionById,
+  resolveInstitutionForShift,
+  PrescriptionData,
+  Institution,
+} from '@/lib/firestore-service';
 
 function PrintPrescriptionContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id') || '';
   const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
+  const [institution, setInstitution] = useState<Institution | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +27,10 @@ function PrintPrescriptionContent() {
       try {
         const data = await getPrescriptionById(id);
         setPrescription(data);
+        if (data?.shiftId) {
+          const inst = await resolveInstitutionForShift(data.shiftId);
+          setInstitution(inst);
+        }
       } catch (err) {
         console.error('Erro ao carregar prescrição:', err);
       } finally {
@@ -59,9 +69,9 @@ function PrintPrescriptionContent() {
   }
 
   const institutionName =
-    process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
+    institution?.name || process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
   const logoPath =
-    process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
+    institution?.logoDataUrl || process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
   const formattedDate = new Date(prescription.prescriptionDate).toLocaleDateString(
     'pt-BR',
@@ -105,13 +115,18 @@ function PrintPrescriptionContent() {
         <table className="w-full border-collapse border-2 border-black text-[10pt]">
           <thead>
             <tr>
-              <th colSpan={2} className="relative text-center h-24 border-b-2 border-black">
+              <th colSpan={2} className="relative text-center h-24 border-b-2 border-black px-4">
                 <img
                   src={logoPath}
                   alt="Logotipo da Instituição"
-                  className="absolute left-4 top-2 h-20 w-auto object-contain"
+                  className="absolute left-4 top-2 h-20 w-auto object-contain max-w-[120px]"
                 />
-                <h1 className="text-[20pt] font-bold">{institutionName}</h1>
+                <h1 className="text-[20pt] font-bold leading-tight">{institutionName}</h1>
+                {institution?.subtitle && (
+                  <p className="text-[10pt] font-semibold tracking-wider text-slate-700 uppercase mt-0.5">
+                    {institution.subtitle}
+                  </p>
+                )}
               </th>
             </tr>
             

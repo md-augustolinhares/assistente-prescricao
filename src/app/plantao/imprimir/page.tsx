@@ -7,8 +7,10 @@ import { PrintButton } from '@/components/prescription/print-button';
 import {
   getShiftById,
   getShiftFullPrescriptions,
+  resolveInstitutionForShift,
   ShiftDetail,
   PrescriptionData,
+  Institution,
 } from '@/lib/firestore-service';
 
 function PrintShiftContent() {
@@ -16,6 +18,7 @@ function PrintShiftContent() {
   const id = searchParams.get('id') || '';
   const [shift, setShift] = useState<ShiftDetail | null>(null);
   const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
+  const [institution, setInstitution] = useState<Institution | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,12 +28,14 @@ function PrintShiftContent() {
         return;
       }
       try {
-        const [shiftData, prescList] = await Promise.all([
+        const [shiftData, prescList, instData] = await Promise.all([
           getShiftById(id),
           getShiftFullPrescriptions(id),
+          resolveInstitutionForShift(id),
         ]);
         setShift(shiftData);
         setPrescriptions(prescList);
+        setInstitution(instData);
       } catch (err) {
         console.error('Erro ao carregar plantão para impressão:', err);
       } finally {
@@ -69,9 +74,9 @@ function PrintShiftContent() {
   }
 
   const institutionName =
-    process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
+    institution?.name || process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
   const logoPath =
-    process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
+    institution?.logoDataUrl || process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 print:p-0 print:bg-white text-black font-sans antialiased flex flex-col gap-8 print:gap-0 print:block">
@@ -115,13 +120,18 @@ function PrintShiftContent() {
             <table className="w-full border-collapse border-2 border-black text-[10pt]">
               <thead>
                 <tr>
-                  <th colSpan={2} className="relative text-center h-24 border-b-2 border-black">
+                  <th colSpan={2} className="relative text-center h-24 border-b-2 border-black px-4">
                     <img
                       src={logoPath}
                       alt="Logotipo da Instituição"
-                      className="absolute left-4 top-2 h-20 w-auto object-contain"
+                      className="absolute left-4 top-2 h-20 w-auto object-contain max-w-[120px]"
                     />
-                    <h1 className="text-[20pt] font-bold">{institutionName}</h1>
+                    <h1 className="text-[20pt] font-bold leading-tight">{institutionName}</h1>
+                    {institution?.subtitle && (
+                      <p className="text-[10pt] font-semibold tracking-wider text-slate-700 uppercase mt-0.5">
+                        {institution.subtitle}
+                      </p>
+                    )}
                   </th>
                 </tr>
                 <tr className="h-8">

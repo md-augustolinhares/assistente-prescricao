@@ -49,6 +49,7 @@ export interface ShiftData {
   id: string;
   shiftDate: string;
   notes: string | null;
+  institutionId?: string | null;
   _count: {
     prescriptions: number;
   };
@@ -70,7 +71,18 @@ export interface ShiftDetail {
   id: string;
   shiftDate: string;
   notes: string | null;
+  institutionId?: string | null;
   prescriptions: PrescriptionSummary[];
+}
+
+export interface Institution {
+  id: string;
+  name: string;
+  subtitle?: string | null;
+  logoDataUrl?: string | null;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PrescriptionItemRow {
@@ -174,11 +186,16 @@ export async function getShiftById(id: string): Promise<ShiftDetail | null> {
     id: shiftSnap.id,
     shiftDate: shiftData.shiftDate,
     notes: shiftData.notes || null,
+    institutionId: shiftData.institutionId || null,
     prescriptions,
   };
 }
 
-export async function createShift(shiftDate: string, notes?: string): Promise<string> {
+export async function createShift(
+  shiftDate: string,
+  notes?: string,
+  institutionId?: string | null
+): Promise<string> {
   const newRef = doc(collection(db, 'shifts'));
   const isoDate =
     shiftDate.length === 10
@@ -189,6 +206,7 @@ export async function createShift(shiftDate: string, notes?: string): Promise<st
     id: newRef.id,
     shiftDate: isoDate,
     notes: notes?.trim() || null,
+    institutionId: institutionId || null,
     createdAt: new Date().toISOString(),
   });
 
@@ -197,10 +215,14 @@ export async function createShift(shiftDate: string, notes?: string): Promise<st
 
 export async function updateShift(
   id: string,
-  params: { shiftDate?: string; notes?: string | null }
+  params: { shiftDate?: string; notes?: string | null; institutionId?: string | null }
 ): Promise<void> {
   const shiftRef = doc(db, 'shifts', id);
   const updateData: Record<string, any> = {};
+
+  if (params.institutionId !== undefined) {
+    updateData.institutionId = params.institutionId || null;
+  }
 
   let isoDate: string | undefined;
   if (params.shiftDate) {
@@ -529,4 +551,165 @@ export async function updateCatalogItem(id: string, item: Partial<CatalogItemDat
 
 export async function deleteCatalogItem(id: string): Promise<void> {
   await deleteDoc(doc(db, 'catalog', id));
+}
+
+// ==========================================
+// 5. GESTÃO DE INSTITUIÇÕES (INSTITUTIONS)
+// ==========================================
+
+export async function getInstitutions(): Promise<Institution[]> {
+  const snap = await getDocs(query(collection(db, 'institutions'), orderBy('createdAt', 'desc')));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      name: data.name,
+      subtitle: data.subtitle || null,
+      logoDataUrl: data.logoDataUrl || null,
+      isDefault: !!data.isDefault,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  });
+}
+
+export async function getActiveInstitution(): Promise<Institution | null> {
+  const q = query(collection(db, 'institutions'), where('isDefault', '==', true));
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    const d = snap.docs[0];
+    const data = d.data();
+    return {
+      id: d.id,
+      name: data.name,
+      subtitle: data.subtitle || null,
+      logoDataUrl: data.logoDataUrl || null,
+      isDefault: true,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  }
+
+  // Fallback se nenhuma estiver marcada como padrão: pega a primeira cadastrada
+  const allSnap = await getDocs(query(collection(db, 'institutions'), orderBy('createdAt', 'asc')));
+  if (!allSnap.empty) {
+    const d = allSnap.docs[0];
+    const data = d.data();
+    return {
+      id: d.id,
+      name: data.name,
+      subtitle: data.subtitle || null,
+      logoDataUrl: data.logoDataUrl || null,
+      isDefault: false,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  }
+
+  return null;
+}
+
+export async function getInstitutionById(id: string): Promise<Institution | null> {
+  const ref = doc(db, 'institutions', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return {
+    id: snap.id,
+    name: data.name,
+    subtitle: data.subtitle || null,
+    logoDataUrl: data.logoDataUrl || null,
+    isDefault: !!data.isDefault,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+}
+
+export async function createInstitution(data: {
+  name: string;
+  subtitle?: string | null;
+  logoDataUrl?: string | null;
+  isDefault?: boolean;
+}): Promise<string> {
+  const newRef = doc(collection(db, 'institutions'));
+  const allInst = await getInstitutions();
+  const shouldBeDefault = data.isDefault || allInst.length === 0;
+
+  const batch = writeBatch(db);
+
+  if (shouldBeDefault) {
+    allInst.forEach((inst) => {
+      batch.update(doc(db, 'institutions', inst.id), { isDefault: false });
+    });
+  }
+
+  batch.set(newRef, {
+    id: newRef.id,
+    name: data.name.trim(),
+    subtitle: data.subtitle?.trim() || null,
+    logoDataUrl: data.logoDataUrl || null,
+    isDefault: shouldBeDefault,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await batch.commit();
+  return newRef.id;
+}
+
+export async function updateInstitution(
+  id: string,
+  data: Partial<Omit<Institution, 'id' | 'createdAt'>>
+): Promise<void> {
+  const ref = doc(db, 'institutions', id);
+  const batch = writeBatch(db);
+
+  if (data.isDefault) {
+    const all = await getInstitutions();
+    all.forEach((inst) => {
+      if (inst.id !== id) {
+        batch.update(doc(db, 'institutions', inst.id), { isDefault: false });
+      }
+    });
+  }
+
+  batch.update(ref, {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+
+  await batch.commit();
+}
+
+export async function setActiveInstitution(id: string): Promise<void> {
+  const all = await getInstitutions();
+  const batch = writeBatch(db);
+
+  all.forEach((inst) => {
+    batch.update(doc(db, 'institutions', inst.id), {
+      isDefault: inst.id === id,
+    });
+  });
+
+  await batch.commit();
+}
+
+export async function deleteInstitution(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'institutions', id));
+}
+
+export async function resolveInstitutionForShift(shiftId?: string | null): Promise<Institution | null> {
+  if (shiftId) {
+    const shiftRef = doc(db, 'shifts', shiftId);
+    const snap = await getDoc(shiftRef);
+    if (snap.exists()) {
+      const sData = snap.data();
+      if (sData.institutionId) {
+        const inst = await getInstitutionById(sData.institutionId);
+        if (inst) return inst;
+      }
+    }
+  }
+
+  return getActiveInstitution();
 }

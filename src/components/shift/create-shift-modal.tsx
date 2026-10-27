@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createShift } from '@/lib/firestore-service';
+import { createShift, getInstitutions, Institution } from '@/lib/firestore-service';
 
 interface CreateShiftModalProps {
   isOpen: boolean;
@@ -11,12 +11,33 @@ interface CreateShiftModalProps {
 
 export function CreateShiftModal({ isOpen, onClose }: CreateShiftModalProps) {
   const router = useRouter();
-  // Data atual no formato YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
   const [shiftDate, setShiftDate] = useState(today);
   const [notes, setNotes] = useState('');
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [selectedInstId, setSelectedInstId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      async function load() {
+        try {
+          const list = await getInstitutions();
+          setInstitutions(list);
+          const defaultInst = list.find((i) => i.isDefault);
+          if (defaultInst) {
+            setSelectedInstId(defaultInst.id);
+          } else if (list.length > 0) {
+            setSelectedInstId(list[0].id);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      load();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -28,7 +49,7 @@ export function CreateShiftModal({ isOpen, onClose }: CreateShiftModalProps) {
     setError('');
 
     try {
-      const createdId = await createShift(shiftDate, notes);
+      const createdId = await createShift(shiftDate, notes, selectedInstId || null);
       router.push(`/plantao?id=${createdId}`);
       onClose();
     } catch (err: any) {
@@ -71,6 +92,29 @@ export function CreateShiftModal({ isOpen, onClose }: CreateShiftModalProps) {
               required
             />
           </div>
+
+          {institutions.length > 0 && (
+            <div>
+              <label
+                htmlFor="shiftInstitution"
+                className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1"
+              >
+                Instituição do Plantão
+              </label>
+              <select
+                id="shiftInstitution"
+                value={selectedInstId}
+                onChange={(e) => setSelectedInstId(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-800 text-xs font-bold uppercase bg-white"
+              >
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name} {inst.isDefault ? '(Padrão)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label

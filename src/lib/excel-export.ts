@@ -1,9 +1,57 @@
 import ExcelJS from 'exceljs';
-import { PrescriptionData, ShiftDetail } from './firestore-service';
+import {
+  PrescriptionData,
+  ShiftDetail,
+  resolveInstitutionForShift,
+  Institution,
+} from './firestore-service';
 
-export async function exportPrescriptionToExcel(prescription: PrescriptionData): Promise<void> {
-  const institutionName = process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
-  const logoPath = process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
+async function addLogoToWorkbook(
+  workbook: ExcelJS.Workbook,
+  logoSource?: string | null
+): Promise<number | undefined> {
+  if (!logoSource) return undefined;
+
+  try {
+    if (logoSource.startsWith('data:image/')) {
+      const parts = logoSource.split(',');
+      const meta = parts[0];
+      const base64Data = parts[1];
+      let ext: 'png' | 'jpeg' = 'png';
+      if (meta.includes('jpeg') || meta.includes('jpg')) ext = 'jpeg';
+      return workbook.addImage({
+        base64: base64Data,
+        extension: ext,
+      });
+    } else {
+      let ext: 'png' | 'jpeg' = 'png';
+      if (logoSource.toLowerCase().endsWith('.jpg') || logoSource.toLowerCase().endsWith('.jpeg')) {
+        ext = 'jpeg';
+      }
+      const res = await fetch(logoSource);
+      if (res.ok) {
+        const arrBuffer = await res.arrayBuffer();
+        return workbook.addImage({
+          buffer: arrBuffer,
+          extension: ext,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Não foi possível carregar logo para Excel:', e);
+  }
+  return undefined;
+}
+
+export async function exportPrescriptionToExcel(
+  prescription: PrescriptionData,
+  customInstitution?: Institution | null
+): Promise<void> {
+  const inst = customInstitution || (await resolveInstitutionForShift(prescription.shiftId));
+  const institutionName =
+    inst?.name || process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
+  const logoPath =
+    inst?.logoDataUrl || process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
   const formattedDate = new Date(prescription.prescriptionDate).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -15,24 +63,7 @@ export async function exportPrescriptionToExcel(prescription: PrescriptionData):
   let safeSheetName = prescription.patientName.replace(/[\\/?*[\]]/g, '').substring(0, 31);
   if (!safeSheetName) safeSheetName = 'Prescricao';
 
-  let imageId: number | undefined;
-
-  if (logoPath) {
-    try {
-      let ext = 'png';
-      if (logoPath.toLowerCase().endsWith('.jpg') || logoPath.toLowerCase().endsWith('.jpeg')) ext = 'jpeg';
-      const res = await fetch(logoPath);
-      if (res.ok) {
-        const arrBuffer = await res.arrayBuffer();
-        imageId = workbook.addImage({
-          buffer: arrBuffer,
-          extension: ext as 'png' | 'jpeg',
-        });
-      }
-    } catch (e) {
-      console.warn('Não foi possível carregar logo para Excel:', e);
-    }
-  }
+  const imageId = await addLogoToWorkbook(workbook, logoPath);
 
   const worksheet = workbook.addWorksheet(safeSheetName);
   buildPrescriptionSheet(worksheet, prescription, formattedDate, institutionName, imageId);
@@ -41,29 +72,19 @@ export async function exportPrescriptionToExcel(prescription: PrescriptionData):
   downloadBlob(buffer, `Prescricao_${prescription.patientName.replace(/\s+/g, '_')}.xlsx`);
 }
 
-export async function exportShiftToExcel(shift: ShiftDetail, fullPrescriptions: PrescriptionData[]): Promise<void> {
-  const institutionName = process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
-  const logoPath = process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
+export async function exportShiftToExcel(
+  shift: ShiftDetail,
+  fullPrescriptions: PrescriptionData[],
+  customInstitution?: Institution | null
+): Promise<void> {
+  const inst = customInstitution || (await resolveInstitutionForShift(shift.id));
+  const institutionName =
+    inst?.name || process.env.NEXT_PUBLIC_INSTITUTION_NAME || 'HOSPITAL MUNICIPAL DE EXEMPLO';
+  const logoPath =
+    inst?.logoDataUrl || process.env.NEXT_PUBLIC_INSTITUTION_LOGO_PATH || '/logos/default-logo.svg';
 
   const workbook = new ExcelJS.Workbook();
-  let imageId: number | undefined;
-
-  if (logoPath) {
-    try {
-      let ext = 'png';
-      if (logoPath.toLowerCase().endsWith('.jpg') || logoPath.toLowerCase().endsWith('.jpeg')) ext = 'jpeg';
-      const res = await fetch(logoPath);
-      if (res.ok) {
-        const arrBuffer = await res.arrayBuffer();
-        imageId = workbook.addImage({
-          buffer: arrBuffer,
-          extension: ext as 'png' | 'jpeg',
-        });
-      }
-    } catch (e) {
-      console.warn('Não foi possível carregar logo para Excel:', e);
-    }
-  }
+  const imageId = await addLogoToWorkbook(workbook, logoPath);
 
   const usedSheetNames = new Set<string>();
 

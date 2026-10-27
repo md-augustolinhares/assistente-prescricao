@@ -339,6 +339,7 @@ function ShiftPageContent() {
         shiftId={shift.id}
         currentDate={shift.shiftDate}
         currentNotes={shift.notes}
+        currentInstitutionId={shift.institutionId}
         onClose={() => setIsEditShiftOpen(false)}
         onSuccess={() => loadShift()}
       />
