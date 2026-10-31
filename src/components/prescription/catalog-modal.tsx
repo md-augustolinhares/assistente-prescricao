@@ -58,7 +58,12 @@ export function CatalogModal({ isOpen, onClose, onSelectItem }: CatalogModalProp
   if (!isOpen) return null;
 
   const filteredItems = items.filter((item) => {
-    const matchesCat = category === 'ALL' || item.category === category;
+    const matchesCat =
+      category === 'ALL' ||
+      item.category === category ||
+      (category === 'CUIDADO' && item.category === 'DIETA') ||
+      (category === 'ELETROLITO' && item.category === 'SONDA') ||
+      (category === 'CONDICIONAL' && item.category === 'PROTOCOLO');
     const matchesSearch =
       !search ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||

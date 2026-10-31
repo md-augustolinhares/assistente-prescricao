@@ -134,7 +134,12 @@ export default function CatalogPage() {
   }
 
   const filtered = items.filter((item) => {
-    const matchCat = selectedCategory === 'ALL' || item.category === selectedCategory;
+    const matchCat =
+      selectedCategory === 'ALL' ||
+      item.category === selectedCategory ||
+      (selectedCategory === 'CUIDADO' && item.category === 'DIETA') ||
+      (selectedCategory === 'ELETROLITO' && item.category === 'SONDA') ||
+      (selectedCategory === 'CONDICIONAL' && item.category === 'PROTOCOLO');
     const matchSearch =
       !search ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -339,6 +344,7 @@ export default function CatalogPage() {
                   <option value="HIDRATACAO">Hidratação / Soroterapia</option>
                   <option value="CUIDADO">Cuidados / Dieta</option>
                   <option value="CONDICIONAL">Condicionais (PRN)</option>
+                  <option value="PROTOCOLO">Protocolos Clínicos</option>
                   <option value="ANTIBIOTICO">Antibiótico</option>
                   <option value="ANTICOAGULANTE">Anticoagulante</option>
                   <option value="ELETROLITO">Eletrólito (Correção Na/K)</option>

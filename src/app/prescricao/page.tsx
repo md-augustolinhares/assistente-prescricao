@@ -165,6 +165,14 @@ function PrescriptionEditorContent() {
       isEnabled: true,
       isManual: false,
       catalogItemId: catalogItem.id,
+      templateItem: {
+        id: catalogItem.id,
+        category: catalogItem.category,
+        isProtocol: false,
+        protocolDetail: null,
+        variants: catalogItem.variants || '[]',
+        isEditable: true,
+      },
     };
     
     setItems((prev) => {
